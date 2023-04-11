@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using DatosPacientes.Models.SP;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
@@ -17,7 +18,7 @@ namespace DatosPacientes.Models
         {
         }
 
-        public virtual DbSet<PacienteSeleccionarCatalogoPorNoHistoriaClinica> PacienteSeleccionarCatalogoPorNoHistoriaClinica { get; set; } = null!;
+        public virtual DbSet<PacienteSeleccionarCatalogo> PacienteSeleccionarCatalogo { get; set; } = null!;
         public virtual DbSet<AreaSalud> AreaSaluds { get; set; } = null!;
         public virtual DbSet<Comunidad> Comunidads { get; set; } = null!;
         public virtual DbSet<Departamento> Departamentos { get; set; } = null!;
