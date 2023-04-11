@@ -52,7 +52,15 @@ namespace DatosPacientes.Controllers
             return resultado;
         }
 
-        
+        [HttpGet("api/[controller]/avanzado/{cui}")]
+        public Task<List<PacienteSeleccionarCatalogo>>
+            GetSeleccionarPorCui(string cui)
+        {
+            var resultado = _context.PacienteSeleccionarCatalogo.
+                FromSqlRaw("EXEC dbo.PacienteSeleccionarCatalogoPorCodigoRENAP @RENAP = {0}",
+                cui).ToListAsync();
+            return resultado;
+        }
 
 
     }
