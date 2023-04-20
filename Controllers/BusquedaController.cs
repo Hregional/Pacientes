@@ -24,24 +24,29 @@ namespace DatosPacientes.Controllers
         }
 
         [HttpGet("persona")]
-        public async Task<List<PersonaDTO>> getPersonas(int pageNumber = 1, int pageSize = 100)
+        public async Task<List<PacienteCompletoDTO>> getPersonas(string NoHistoriaClinica, int pageNumber = 1, int pageSize = 100)
         {
-            var personas = await _context.Personas
-                .Include(p => p.Pacientes)
-                .Include(d => d.DireccionNavigation)
+            var query = _context.Pacientes
+            .Join(_context.Personas, p => p.Persona, per => per.Codigo, (p, per) => new { Paciente = p, Persona = per })
+            .Where(a => (a.Paciente.NoHistoriaClinica.Contains(NoHistoriaClinica) || NoHistoriaClinica == "-1"))
+            .OrderBy(a => a.Persona.Nombre1)
+            .Select(a => new PacienteCompletoDTO()
+            {
+                Codigo = a.Paciente.Codigo,
+                Persona = a.Paciente.Persona,
+                Nombres = a.Persona.Nombre1 + " " + (a.Persona.Nombre2 ?? ""),
+                Apellidos = a.Persona.Apellido1 + " " + (a.Persona.Apellido2 ?? ""),
+                NoHistoriaClinica = a.Paciente.NoHistoriaClinica,
+                FechaNacimiento = a.Persona.FechaNacimiento,
+                nombrePadre = a.Paciente.NombrePadre,
+                nombreMadre = a.Paciente.NombreMadre,
+                lugarNacimiento = a.Paciente.LugarNacimiento,
+                Archivo_Fisico = a.Paciente.ArchivoFisico
+            });
 
+            return query.ToList();
 
-                //.Join(_context.Direccions, p => p.Direccion, d => d.Codigo, (p, d) => new { p, d })
-                //.Where(p => p.Pacientes.Any(pa => pa.NoHistoriaClinica.Contains("3574")))
-
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
-                //.ProjectTo<PersonaDTO>(_mapper.ConfigurationProvider)
-                .ToListAsync();
-
-            var pacienteDto = _mapper.Map<List<PersonaDTO>>(personas);
-
-            return pacienteDto;
+ 
 
         }
 
