@@ -1,4 +1,6 @@
-﻿namespace DatosPacientes.DTOs
+﻿using DatosPacientes.Models;
+
+namespace DatosPacientes.DTOs
 {
     public class PersonaDTO
     {
@@ -20,6 +22,7 @@
 
         public DateTime? FechaDefuncion { get; set; }
         
-        public ICollection<PacienteDTO> Pacientes { get; set; }
+        public virtual ICollection<PacienteDTO> Pacientes { get; set; }
+        public virtual ICollection<DireccionDTO> Direcciones { get; set; }
     }
 }

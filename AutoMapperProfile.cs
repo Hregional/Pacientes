@@ -9,6 +9,7 @@ public class AutoMapperProfile : Profile
     {
         CreateMap<Paciente, PacienteDTO>();
         CreateMap<Persona, PersonaDTO>();
+        CreateMap<Direccion, DireccionDTO>();
      
-        }
+     }
 }

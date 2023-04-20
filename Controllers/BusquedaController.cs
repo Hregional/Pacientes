@@ -28,7 +28,12 @@ namespace DatosPacientes.Controllers
         {
             var personas = await _context.Personas
                 .Include(p => p.Pacientes)
+                .Include(d => d.DireccionNavigation)
+
+
+                //.Join(_context.Direccions, p => p.Direccion, d => d.Codigo, (p, d) => new { p, d })
                 //.Where(p => p.Pacientes.Any(pa => pa.NoHistoriaClinica.Contains("3574")))
+
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 //.ProjectTo<PersonaDTO>(_mapper.ConfigurationProvider)
