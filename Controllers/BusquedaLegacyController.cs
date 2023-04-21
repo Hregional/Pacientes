@@ -41,9 +41,9 @@ namespace DatosPacientes.Controllers
 
             // Check if the parameters are null, and if so, set them to DBNull.Value
 
-            SegundoNombre = SegundoNombre ?? DBNull.Value.ToString();
-            SegundoApellido = SegundoApellido ?? DBNull.Value.ToString();
-            TercerApellido = TercerApellido ?? DBNull.Value.ToString();
+            SegundoNombre ??= DBNull.Value.ToString();
+            SegundoApellido ??= DBNull.Value.ToString();
+            TercerApellido ??= DBNull.Value.ToString();
 
             var resultado = _context.PacienteSeleccionarCatalogo.
                 FromSqlRaw("EXEC dbo.PacienteSeleccionarPorNombre @PrimerNombre = {0}," +

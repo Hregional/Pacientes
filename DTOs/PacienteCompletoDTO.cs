@@ -13,11 +13,18 @@ namespace DatosPacientes.DTOs
         [DataType(DataType.DateTime)]
         [DisplayFormat(DataFormatString = "{0:dd-MM-yyyy}", ApplyFormatInEditMode = true)]
         public DateTime? FechaNacimiento { get; set; }
+
+        private string? _sexo;
+        public string? Sexo
+        {
+            get { return _sexo; }
+            set { _sexo = (value == "0") ? "M" : "F"; }
+        }
         public string? Nombre_Resposable { get; set; }
         public string? Direccion_Responsable { get; set; }
         public string? Telefono_Responsable { get; set; }
-        public string? NombrePadre { get; set; }
         public string? NombreMadre { get; set; }
+        public string? NombrePadre { get; set; }
         public string? LugarNacimiento { get; set; }
         public bool? Archivo_Fisico { get; set; }
 

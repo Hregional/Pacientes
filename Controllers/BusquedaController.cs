@@ -23,8 +23,8 @@ namespace DatosPacientes.Controllers
             _mapper = mapper;
         }
 
-        [HttpGet("persona")]
-        public async Task<List<PacienteCompletoDTO>> getPersonas(string NoHistoriaClinica, int pageNumber = 1, int pageSize = 100)
+        [HttpGet("paciente/{NoHistoriaClinica}")]
+        public async Task<List<PacienteCompletoDTO>> GetPersonas(string NoHistoriaClinica)
         {
             var query = _context.Pacientes
             .Join(_context.Personas, p => p.Persona, per => per.Codigo, (p, per) => new { Paciente = p, Persona = per })
@@ -38,6 +38,7 @@ namespace DatosPacientes.Controllers
                 Apellidos = a.Persona.Apellido1 + " " + (a.Persona.Apellido2 ?? ""),
                 NoHistoriaClinica = a.Paciente.NoHistoriaClinica,
                 FechaNacimiento = a.Persona.FechaNacimiento,
+                Sexo = a.Persona.Sexo,
                 NombrePadre = a.Paciente.NombrePadre,
                 NombreMadre = a.Paciente.NombreMadre,
                 LugarNacimiento = a.Paciente.LugarNacimiento,
@@ -45,7 +46,7 @@ namespace DatosPacientes.Controllers
                 Nombre_Resposable = a.Paciente.NombreResponsable,
                 Direccion_Responsable = a.Paciente.DireccionResponsable,
                 Telefono_Responsable = a.Paciente.TelefonoResponsable
-               
+
             });
 
             return await query.ToListAsync();
@@ -54,36 +55,8 @@ namespace DatosPacientes.Controllers
 
         }
 
-
-
-        [HttpGet("paciente/{NoHistoriaClinica}")]
-         public async Task<List<PacienteDTO>> GetPatients(string NoHistoriaClinica) {
-
-            var pacientes = await _context.Pacientes.
-                 Where(p => p.NoHistoriaClinica.Contains(NoHistoriaClinica))
-                 .ToListAsync();
-
-             var pacienteDto = _mapper.Map<List<PacienteDTO>> (pacientes);
-
-             return pacienteDto;
-
-         }
-        [HttpGet("pacientePaged")]
-        public async Task<List<PacienteDTO>> GetPatients(string NoHistoriaClinica, int pageNumber = 1, int pageSize = 10)
-        {
-            var pacientes = await _context.Pacientes
-                .Where(p => p.NoHistoriaClinica.Contains(NoHistoriaClinica))
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
-                .ToListAsync();
-
-            var pacientesDto = _mapper.Map<List<PacienteDTO>>(pacientes);
-
-            return pacientesDto;
-        }
-
         [HttpGet("pacientes")]
-        public async Task<List<PacienteDTO>> GetAllPatients(int pageNumber = 1, int pageSize = 10)
+        public async Task<List<PacienteDTO>> GetAllPatients(int pageNumber = 1, int pageSize = 50)
         {
             var pacientes = await _context.Pacientes.OrderByDescending(p => p.Codigo)
                 .Skip((pageNumber - 1) * pageSize)
