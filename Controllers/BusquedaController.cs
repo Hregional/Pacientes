@@ -38,15 +38,19 @@ namespace DatosPacientes.Controllers
                 Apellidos = a.Persona.Apellido1 + " " + (a.Persona.Apellido2 ?? ""),
                 NoHistoriaClinica = a.Paciente.NoHistoriaClinica,
                 FechaNacimiento = a.Persona.FechaNacimiento,
-                nombrePadre = a.Paciente.NombrePadre,
-                nombreMadre = a.Paciente.NombreMadre,
-                lugarNacimiento = a.Paciente.LugarNacimiento,
-                Archivo_Fisico = a.Paciente.ArchivoFisico
+                NombrePadre = a.Paciente.NombrePadre,
+                NombreMadre = a.Paciente.NombreMadre,
+                LugarNacimiento = a.Paciente.LugarNacimiento,
+                Archivo_Fisico = a.Paciente.ArchivoFisico,
+                Nombre_Resposable = a.Paciente.NombreResponsable,
+                Direccion_Responsable = a.Paciente.DireccionResponsable,
+                Telefono_Responsable = a.Paciente.TelefonoResponsable
+               
             });
 
-            return query.ToList();
+            return await query.ToListAsync();
 
- 
+
 
         }
 
