@@ -63,8 +63,8 @@ namespace DatosPacientes.Controllers
                 {
                     return NotFound("No se han encontrado pacientes para la NoHistoriaClinica dada.");
                 }
-
-                return pacientes;
+                
+                return Ok(pacientes);
             }
             catch
             {

@@ -55,7 +55,7 @@ namespace DatosPacientes.IntegrationTests.Pacientes
                 var controller = new BusquedaController(context, _mapper);
 
                 // Act
-                var result = await controller.GetPersonas("123");
+                var result = await controller.GetPersonas("123456789");
 
                 // Assert
                 var notFoundResult = Assert.IsType<NotFoundObjectResult>(result.Result);
@@ -72,7 +72,7 @@ namespace DatosPacientes.IntegrationTests.Pacientes
                 var controller = new BusquedaController(context, _mapper);
 
                 // Act
-                var result = await controller.GetPersonas("1");
+                var result = await controller.GetPersonas("736523");
 
                 // Assert
                 var okResult = Assert.IsType<OkObjectResult>(result.Result);
