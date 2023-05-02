@@ -10,7 +10,11 @@ public class AutoMapperProfile : Profile
         CreateMap<Paciente, PacienteDTO>()
             .ForMember(dest =>
             dest.Archivo_Fisico,
-            opt => opt.Ignore());
+            opt => opt.Ignore())
+            .ForMember(dest =>
+            dest.PersonasLink,
+            opt => opt.Ignore()
+            );
         CreateMap<Persona, PersonaDTO>()
             .ForMember(dest =>
             dest.Direcciones,

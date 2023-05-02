@@ -10,5 +10,6 @@
         public string? NoHistoriaClinica { get; set; } = string.Empty;
         public string? LugarNacimiento { get; set; }
         public bool? Archivo_Fisico { get; set; }
+        public string PersonasLink { get; set; } = string.Empty;
     }
 }

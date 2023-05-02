@@ -6,6 +6,7 @@ using DatosPacientes.Models.SP;
 using AutoMapper;
 using DatosPacientes.DTOs;
 using AutoMapper.QueryableExtensions;
+using Microsoft.AspNetCore.Mvc.Routing;
 
 namespace DatosPacientes.Controllers
 {
@@ -74,7 +75,7 @@ namespace DatosPacientes.Controllers
 
         }
 
-        [HttpGet("pacientes")]
+        [HttpGet]
         public async Task<List<PacienteDTO>> GetAllPatients(int pageNumber = 1, int pageSize = 50)
         {
             var pacientes = await _context.Pacientes.OrderByDescending(p => p.Codigo)
@@ -84,8 +85,14 @@ namespace DatosPacientes.Controllers
 
             var PacienteDto = _mapper.Map<List<PacienteDTO>>(pacientes);
 
-            return PacienteDto;
+            // Add link to GetPersonas method
+            foreach (var paciente in PacienteDto)
+            {
+                paciente.PersonasLink = Url.Action("GetPersonas", "Busqueda", new { NoHistoriaClinica = paciente.NoHistoriaClinica });
+            }
 
+            return PacienteDto;
         }
+
     }
 }
