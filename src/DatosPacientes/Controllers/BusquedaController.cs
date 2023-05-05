@@ -88,7 +88,8 @@ namespace DatosPacientes.Controllers
             // Add link to GetPersonas method
             foreach (var paciente in PacienteDto)
             {
-                paciente.PersonasLink = Url.Action("GetPersonas", "Busqueda", new { NoHistoriaClinica = paciente.NoHistoriaClinica });
+                string? v = Url.Action("GetPersonas", "Busqueda", new { paciente.NoHistoriaClinica });
+                paciente.PersonasLink = v;
             }
 
             return PacienteDto;
