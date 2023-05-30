@@ -7,12 +7,14 @@ using AutoMapper;
 using DatosPacientes.DTOs;
 using AutoMapper.QueryableExtensions;
 using Microsoft.AspNetCore.Mvc.Routing;
+using Microsoft.AspNetCore.Authorization;
 
 namespace DatosPacientes.Controllers
 {
     [Microsoft.AspNetCore.Components.Route("api/[controller]")]
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class BusquedaController : ControllerBase
     {
         private readonly RecepcionV2Context _context;

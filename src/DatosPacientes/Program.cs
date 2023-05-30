@@ -60,6 +60,11 @@ builder.Services.AddAuthentication("Bearer")
         options.Authority = adminApiConfiguration.IdentityServerBaseUrl;
         options.RequireHttpsMetadata = false;
         options.Audience = adminApiConfiguration.OidcApiName;
+
+        options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+        {
+            ValidateAudience = false,
+        };
     });
 
 var app = builder.Build();
