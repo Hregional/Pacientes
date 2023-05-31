@@ -58,13 +58,8 @@ builder.Services.AddAuthentication("Bearer")
     .AddJwtBearer("Bearer", options =>
     {
         options.Authority = adminApiConfiguration.IdentityServerBaseUrl;
-        options.RequireHttpsMetadata = false;
+        options.RequireHttpsMetadata = true;
         options.Audience = adminApiConfiguration.OidcApiName;
-
-        options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
-        {
-            ValidateAudience = false,
-        };
     });
 
 var app = builder.Build();
