@@ -53,7 +53,7 @@ builder.Services.AddSwaggerGen(
 
 builder.Services.AddAutoMapper(typeof(Program).Assembly);
 
-
+// Add authentication
 builder.Services.AddAuthentication("Bearer")
     .AddJwtBearer("Bearer", options =>
     {

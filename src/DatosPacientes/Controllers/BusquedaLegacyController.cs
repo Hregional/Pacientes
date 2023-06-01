@@ -1,5 +1,6 @@
 ﻿using DatosPacientes.Models;
 using DatosPacientes.Models.SP;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -8,6 +9,7 @@ namespace DatosPacientes.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class BusquedaLegacyController : ControllerBase
     {
 
