@@ -14,7 +14,7 @@ namespace DatosPacientes.Controllers
     [Microsoft.AspNetCore.Components.Route("api/[controller]")]
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize]
+    //[Authorize]
     public class BusquedaController : ControllerBase
     {
         private readonly RecepcionV2Context _context;

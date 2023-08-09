@@ -33,7 +33,7 @@ builder.Services.AddSwaggerGen(
     {
         options.SwaggerDoc(adminApiConfiguration.ApiVersion, new OpenApiInfo { Title = adminApiConfiguration.ApiName, Version = adminApiConfiguration.ApiVersion });
 
-        options.AddSecurityDefinition("oauth2", new OpenApiSecurityScheme
+       /* options.AddSecurityDefinition("oauth2", new OpenApiSecurityScheme
         {
             Type = SecuritySchemeType.OAuth2,
             Flows = new OpenApiOAuthFlows
@@ -49,10 +49,12 @@ builder.Services.AddSwaggerGen(
             }
         });
         options.OperationFilter<AuthorizeCheckOperationFilter>();
+       */
     });
 
 builder.Services.AddAutoMapper(typeof(Program).Assembly);
 
+/*
 // Add authentication
 builder.Services.AddAuthentication("Bearer")
     .AddJwtBearer("Bearer", options =>
@@ -61,6 +63,7 @@ builder.Services.AddAuthentication("Bearer")
         options.RequireHttpsMetadata = true;
         options.Audience = adminApiConfiguration.OidcApiName;
     });
+*/
 
 var app = builder.Build();
 
