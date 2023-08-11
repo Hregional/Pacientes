@@ -10,9 +10,9 @@ builder.Configuration
     .SetBasePath(Directory.GetCurrentDirectory()).AddJsonFile("secrets.json", optional: true, reloadOnChange: true);
 
 // Acceder a la configuración de la sección AdminApiConfiguration
-var adminApiConfiguration = builder.Configuration.GetSection(nameof(AdminApiConfiguration)).Get<AdminApiConfiguration>();
+//var adminApiConfiguration = builder.Configuration.GetSection(nameof(AdminApiConfiguration)).Get<AdminApiConfiguration>();
 
-builder.Services.AddSingleton(adminApiConfiguration);
+//builder.Services.AddSingleton(adminApiConfiguration);
 
 
 // Add services to the container.
@@ -31,7 +31,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(
     options =>
     {
-        options.SwaggerDoc(adminApiConfiguration.ApiVersion, new OpenApiInfo { Title = adminApiConfiguration.ApiName, Version = adminApiConfiguration.ApiVersion });
+      // options.SwaggerDoc(adminApiConfiguration.ApiVersion, new OpenApiInfo { Title = adminApiConfiguration.ApiName, Version = adminApiConfiguration.ApiVersion });
 
        /* options.AddSecurityDefinition("oauth2", new OpenApiSecurityScheme
         {

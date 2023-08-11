@@ -19,7 +19,7 @@ namespace DatosPacientes.IntegrationTests.Pacientes
         private static bool _databaseInitialized;
 
         private string dbName = "RecepcionV2T";
-        private string connectionString = "Server=(localdb)\\mssqllocaldb;Database=RecepcionV2T;Trusted_Connection=True;MultipleActiveResultSets=true";
+        private string connectionString = "Server=(localdb)\\mssqllocaldb;Database=RecepcionV2T; User Id=sa; Password=Hospital0; Trusted_Connection=True;MultipleActiveResultSets=true";
 
         public SharedDatabaseFixture()
         {
