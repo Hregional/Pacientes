@@ -127,6 +127,73 @@ namespace DatosPacientes.Controllers
 
 
         }
+        [HttpGet("paciente/nombre")]
+        public async Task<ActionResult<List<PacienteCompletoDTO>>> GetPacientesByName(
+            string PrimerNombre,
+            string PrimerApellido,
+            string? SegundoNombre = null,
+            string? SegundoApellido = null,
+            string? TercerApellido = null)
+        {
+            //Limipiamos los parametros
+            PrimerNombre = PrimerNombre.Trim();
+            PrimerApellido = PrimerApellido.Trim();
+            SegundoNombre = SegundoNombre?.Trim();
+            SegundoApellido = SegundoApellido?.Trim();
+            TercerApellido = TercerApellido?.Trim();
+
+            //Convertimos los valores de entrada a mayusculas
+            PrimerNombre = PrimerNombre.ToUpper();
+            SegundoNombre = SegundoNombre?.ToUpper();
+            PrimerApellido = PrimerApellido.ToUpper();
+            SegundoApellido = SegundoApellido?.ToUpper();
+            TercerApellido = TercerApellido?.ToUpper();
+
+
+            try
+            {
+                var query = _context.Pacientes
+                .Join(_context.Personas, p => p.Persona, per => per.Codigo, (p, per) => new { Paciente = p, Persona = per })
+                .Where(a =>
+                (a.Persona.Nombre1.Contains(PrimerNombre) &&
+                 a.Persona.Apellido1.Contains(PrimerApellido) &&
+                 (SegundoNombre == null || a.Persona.Nombre2.Contains(SegundoNombre)) &&
+                 (SegundoApellido == null || a.Persona.Apellido2.Contains(SegundoApellido))
+                ))
+                .OrderBy(a => a.Persona.Nombre1)
+                .Select(a => new PacienteCompletoDTO()
+                {
+                    Codigo = a.Paciente.Codigo,
+                    Persona = a.Paciente.Persona,
+                    Nombres = a.Persona.Nombre1 + " " + (a.Persona.Nombre2 ?? ""),
+                    Apellidos = a.Persona.Apellido1 + " " + (a.Persona.Apellido2 ?? ""),
+                    NoHistoriaClinica = a.Paciente.NoHistoriaClinica,
+                    FechaNacimiento = a.Persona.FechaNacimiento,
+                    Sexo = a.Persona.Sexo,
+                    NombrePadre = a.Paciente.NombrePadre,
+                    NombreMadre = a.Paciente.NombreMadre,
+                    LugarNacimiento = a.Paciente.LugarNacimiento,
+                    Archivo_Fisico = a.Paciente.ArchivoFisico,
+                    Nombre_Resposable = a.Paciente.NombreResponsable,
+                    Direccion_Responsable = a.Paciente.DireccionResponsable,
+                    Telefono_Responsable = a.Paciente.TelefonoResponsable
+
+                });
+
+                var pacientes = await query.ToListAsync();
+
+                if (pacientes.Count == 0)
+                {
+                    return NotFound("No se han encontrado pacientes para la NoHistoriaClinica dada.");
+                }
+
+                return Ok(pacientes);
+            }
+            catch
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, "Ha ocurrido un error al procesar la solicitud");
+            }
+        }
 
         [HttpGet]
         public async Task<List<PacienteDTO>> GetAllPatients(int pageNumber = 1, int pageSize = 50)
