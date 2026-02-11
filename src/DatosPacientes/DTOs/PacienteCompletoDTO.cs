@@ -28,6 +28,6 @@ namespace DatosPacientes.DTOs
         public string? LugarNacimiento { get; set; }
         public bool? Archivo_Fisico { get; set; }
 
-        
+        public string? Edad { get; set; }
     }
 }

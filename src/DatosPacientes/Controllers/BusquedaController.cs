@@ -169,6 +169,7 @@ namespace DatosPacientes.Controllers
                     Apellidos = a.Persona.Apellido1 + " " + (a.Persona.Apellido2 ?? ""),
                     NoHistoriaClinica = a.Paciente.NoHistoriaClinica,
                     FechaNacimiento = a.Persona.FechaNacimiento,
+                    Edad = calculateAge(a.Persona.FechaNacimiento ?? DateTime.Now),
                     Sexo = a.Persona.Sexo,
                     NombrePadre = a.Paciente.NombrePadre,
                     NombreMadre = a.Paciente.NombreMadre,
@@ -215,5 +216,39 @@ namespace DatosPacientes.Controllers
             return PacienteDto;
         }
 
+        
+        public static string calculateAge(DateTime birthDate)
+        {
+            try
+            {
+                DateTime now = DateTime.Today;
+                int ageYears = now.Year - birthDate.Year;
+
+                if (birthDate > now.AddYears(-ageYears))
+                {
+                    ageYears--;
+                }
+
+                int ageMonths = now.Month - birthDate.Month;
+                if (ageMonths < 0)
+                {
+                    ageMonths += 12;
+                    ageYears--;
+                }
+
+                int ageDays = now.Day - birthDate.Day;
+                if (ageDays < 0)
+                {
+                    ageDays += DateTime.DaysInMonth(now.Year, now.Month);
+                    ageMonths--;
+                }
+
+                return string.Format("{0} años, {1} meses, {2} días", ageYears, ageMonths, ageDays);
+            }catch(Exception e)
+            {
+                return "Error al calcular la edad";
+            }
+            
+        }
     }
 }
