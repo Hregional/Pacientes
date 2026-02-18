@@ -32,7 +32,7 @@ namespace DatosPacientes.DTOs
         public bool? Archivo_Fisico { get; set; }
 
         public string? Edad { get; set; }
-        public string Direccion_Paciente_Completa { get; internal set; }
+        public string? Direccion_Paciente_Completa { get; internal set; }
         public string? Direccion_Paciente { get; internal set; }
     }
 }

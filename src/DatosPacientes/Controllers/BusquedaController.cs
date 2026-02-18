@@ -185,35 +185,77 @@ namespace DatosPacientes.Controllers
 
         // ─── Búsqueda por Nombre ──────────────────────────────────────────────────
         [HttpGet("paciente/nombre")]
-        public async Task<ActionResult<List<PacienteCompletoDTO>>> GetPacientesByName(
+            public async Task<ActionResult<List<PacienteCompletoDTO>>> GetPacientesByName(
             string PrimerNombre,
             string PrimerApellido,
             string? SegundoNombre = null,
             string? SegundoApellido = null,
             string? TercerApellido = null)
-        {
-            PrimerNombre = PrimerNombre.Trim().ToUpper();
-            PrimerApellido = PrimerApellido.Trim().ToUpper();
-            SegundoNombre = SegundoNombre?.Trim().ToUpper();
-            SegundoApellido = SegundoApellido?.Trim().ToUpper();
-            TercerApellido = TercerApellido?.Trim().ToUpper();
+            {
+            PrimerNombre = (PrimerNombre ?? "").Trim();
+            PrimerApellido = (PrimerApellido ?? "").Trim();
+            SegundoNombre = (SegundoNombre ?? "").Trim();
+            SegundoApellido = (SegundoApellido ?? "").Trim();
+            TercerApellido = (TercerApellido ?? "").Trim();
 
             try
             {
-                int estadoRequerido = await GetEstadoRequerido();
-
                 var query = _context.Pacientes
                     .Join(_context.Personas,
                         p => p.Persona,
                         per => per.Codigo,
                         (p, per) => new { Paciente = p, Persona = per })
                     .Where(a =>
-                        a.Persona.Estado == estadoRequerido &&
-                        a.Persona.Nombre1.Contains(PrimerNombre) &&
-                        a.Persona.Apellido1.Contains(PrimerApellido) &&
-                        // ✅ Protección contra null en Nombre2 y Apellido2
-                        (SegundoNombre == null || (a.Persona.Nombre2 != null && a.Persona.Nombre2.Contains(SegundoNombre))) &&
-                        (SegundoApellido == null || (a.Persona.Apellido2 != null && a.Persona.Apellido2.Contains(SegundoApellido)))
+                        a.Persona.Estado == 0 &&
+
+    // PrimerNombre - búsqueda sin acento (CI_AI)
+    (EF.Functions.Like(
+        EF.Functions.Collate(a.Persona.Nombre1, "SQL_Latin1_General_CP1_CI_AI"),
+        $"%{PrimerNombre}%") ||
+     EF.Functions.Like(
+        EF.Functions.Collate(a.Persona.Nombre2 ?? "", "SQL_Latin1_General_CP1_CI_AI"),
+        $"%{PrimerNombre}%")) &&
+
+    (SegundoNombre == "" ||
+     EF.Functions.Like(
+        EF.Functions.Collate(a.Persona.Nombre1, "SQL_Latin1_General_CP1_CI_AI"),
+        $"%{SegundoNombre}%") ||
+     EF.Functions.Like(
+        EF.Functions.Collate(a.Persona.Nombre2 ?? "", "SQL_Latin1_General_CP1_CI_AI"),
+        $"%{SegundoNombre}%")) &&
+
+    // PrimerApellido - búsqueda sin acento
+    (EF.Functions.Like(
+        EF.Functions.Collate(a.Persona.Apellido1, "SQL_Latin1_General_CP1_CI_AI"),
+        $"%{PrimerApellido}%") ||
+     EF.Functions.Like(
+        EF.Functions.Collate(a.Persona.Apellido2 ?? "", "SQL_Latin1_General_CP1_CI_AI"),
+        $"%{PrimerApellido}%") ||
+     EF.Functions.Like(
+        EF.Functions.Collate(a.Persona.Apellido3 ?? "", "SQL_Latin1_General_CP1_CI_AI"),
+        $"%{PrimerApellido}%")) &&
+
+    (SegundoApellido == "" ||
+     EF.Functions.Like(
+        EF.Functions.Collate(a.Persona.Apellido1, "SQL_Latin1_General_CP1_CI_AI"),
+        $"%{SegundoApellido}%") ||
+     EF.Functions.Like(
+        EF.Functions.Collate(a.Persona.Apellido2 ?? "", "SQL_Latin1_General_CP1_CI_AI"),
+        $"%{SegundoApellido}%") ||
+     EF.Functions.Like(
+        EF.Functions.Collate(a.Persona.Apellido3 ?? "", "SQL_Latin1_General_CP1_CI_AI"),
+        $"%{SegundoApellido}%")) &&
+
+    (TercerApellido == "" ||
+     EF.Functions.Like(
+        EF.Functions.Collate(a.Persona.Apellido1, "SQL_Latin1_General_CP1_CI_AI"),
+        $"%{TercerApellido}%") ||
+     EF.Functions.Like(
+        EF.Functions.Collate(a.Persona.Apellido2 ?? "", "SQL_Latin1_General_CP1_CI_AI"),
+        $"%{TercerApellido}%") ||
+     EF.Functions.Like(
+        EF.Functions.Collate(a.Persona.Apellido3 ?? "", "SQL_Latin1_General_CP1_CI_AI"),
+        $"%{TercerApellido}%"))
                     )
                     .OrderBy(a => a.Persona.Nombre1)
                     .Select(a => new PacienteCompletoDTO()
@@ -221,9 +263,11 @@ namespace DatosPacientes.Controllers
                         Codigo = a.Paciente.Codigo,
                         Persona = a.Paciente.Persona,
                         Nombres = a.Persona.Nombre1 + " " + (a.Persona.Nombre2 ?? ""),
-                        Apellidos = a.Persona.Apellido1 + " " + (a.Persona.Apellido2 ?? ""),
+                        Apellidos = a.Persona.Apellido1 + " " +
+                                    (a.Persona.Apellido2 ?? "") + " " +
+                                    (a.Persona.Apellido3 != null ? "de " + a.Persona.Apellido3 : ""),
                         NoHistoriaClinica = a.Paciente.NoHistoriaClinica,
-                        CodigoRenap = a.Persona.CodigoRenap, // ✅ faltaba en el original
+                        CodigoRenap = a.Persona.CodigoRenap,
                         FechaNacimiento = a.Persona.FechaNacimiento,
                         Edad = calculateAge(a.Persona.FechaNacimiento ?? DateTime.Now),
                         Sexo = a.Persona.Sexo,
@@ -234,11 +278,17 @@ namespace DatosPacientes.Controllers
                         Nombre_Resposable = a.Paciente.NombreResponsable,
                         Direccion_Responsable = a.Paciente.DireccionResponsable,
                         Telefono_Responsable = a.Paciente.TelefonoResponsable,
-                        Direccion_Paciente = a.Persona.DireccionNavigation != null ? a.Persona.DireccionNavigation.Descripcion : "",
+                        Direccion_Paciente = a.Persona.DireccionNavigation != null
+                            ? a.Persona.DireccionNavigation.Descripcion
+                            : "",
                         Direccion_Paciente_Completa = a.Persona.DireccionNavigation != null
                             ? (a.Persona.DireccionNavigation.Descripcion ?? "") +
-                              (a.Persona.DireccionNavigation.MunicipioNavigation != null ? ", " + a.Persona.DireccionNavigation.MunicipioNavigation.Nombre : "") +
-                              (a.Persona.DireccionNavigation.DepartamentoNavigation != null ? ", " + a.Persona.DireccionNavigation.DepartamentoNavigation.Nombre : "")
+                              (a.Persona.DireccionNavigation.MunicipioNavigation != null
+                                  ? ", " + a.Persona.DireccionNavigation.MunicipioNavigation.Nombre
+                                  : "") +
+                              (a.Persona.DireccionNavigation.DepartamentoNavigation != null
+                                  ? ", " + a.Persona.DireccionNavigation.DepartamentoNavigation.Nombre
+                                  : "")
                             : ""
                     });
 
