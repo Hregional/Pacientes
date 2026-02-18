@@ -7,6 +7,9 @@ namespace DatosPacientes.DTOs
         public int Codigo { get; set; }
         public int Persona { get; set; }
         public string? NoHistoriaClinica { get; set; } = string.Empty;
+
+        public string? CodigoRenap { get; set; }
+
         public string? Nombres { get; set; }
         public string? Apellidos { get; set; }
 
@@ -29,5 +32,7 @@ namespace DatosPacientes.DTOs
         public bool? Archivo_Fisico { get; set; }
 
         public string? Edad { get; set; }
+        public string Direccion_Paciente_Completa { get; internal set; }
+        public string? Direccion_Paciente { get; internal set; }
     }
 }

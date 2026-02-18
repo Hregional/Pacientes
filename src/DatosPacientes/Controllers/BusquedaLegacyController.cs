@@ -55,12 +55,19 @@ namespace DatosPacientes.Controllers
         }
 
         [HttpGet("avanzado/{cui}")]
-        public Task<List<PacienteSeleccionarCatalogo>>
-            GetSeleccionarPorCui(string cui)
+        public Task<List<PacienteSeleccionarCatalogo>> GetSeleccionarPorCui(string cui)
         {
-            var resultado = _context.PacienteSeleccionarCatalogo.
-                FromSqlRaw("EXEC dbo.PacienteSeleccionarCatalogoPorCodigoRENAP @RENAP = {0}",
-                cui).ToListAsync();
+            // Esto elimina cualquier carácter que no sea un número (espacios, guiones, letras)
+            string cuiSoloNumeros = new string(cui.Where(char.IsDigit).ToArray());
+
+            // Si después de limpiar queda vacío (o era "-1"), mantenemos el comportamiento original del SP
+            if (string.IsNullOrEmpty(cuiSoloNumeros) && cui != "-1") cuiSoloNumeros = "0";
+            else if (cui == "-1") cuiSoloNumeros = "-1";
+
+            var resultado = _context.PacienteSeleccionarCatalogo
+                .FromSqlRaw("EXEC dbo.PacienteSeleccionarCatalogoPorCodigoRENAP @RENAP = {0}", cuiSoloNumeros)
+                .ToListAsync();
+
             return resultado;
         }
     }
