@@ -1,4 +1,5 @@
 using DatosPacientes.Configuration;
+using DatosPacientes.Helpers.DatosPacientes.Helpers;
 using DatosPacientes.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
@@ -20,7 +21,10 @@ builder.Configuration
 builder.Services.AddControllers(
 
     ).AddJsonOptions(x =>
-                x.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles);
+    {
+        x.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+        x.JsonSerializerOptions.Converters.Add(new DateTimeConverter("dd-MM-yyyy"));
+    });
 builder.Services.AddDbContext<RecepcionV2Context>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("cnDatabase")));
 
