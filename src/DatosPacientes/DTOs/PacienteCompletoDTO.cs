@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace DatosPacientes.DTOs
 {
@@ -32,7 +33,15 @@ namespace DatosPacientes.DTOs
         public bool? Archivo_Fisico { get; set; }
 
         public string? Edad { get; set; }
-        public string? Direccion_Paciente_Completa { get; internal set; }
-        public string? Direccion_Paciente { get; internal set; }
+        
+        [JsonPropertyName("direccion paciente")]
+        public DireccionPacienteDTO? DireccionPaciente { get; set; }
+    }
+
+    public class DireccionPacienteDTO
+    {
+        public string? Descripcion { get; set; }
+        public string? Municipio { get; set; }
+        public string? Departamento { get; set; }
     }
 }

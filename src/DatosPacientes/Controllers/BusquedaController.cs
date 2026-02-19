@@ -25,7 +25,7 @@ namespace DatosPacientes.Controllers
         }
 
         // ─── Método auxiliar: normaliza DPI y recorta espacios ───────────────────
-        private static void NormalizarPacientes(List<PacienteCompletoDTO> pacientes)
+        public static void NormalizarPacientes(List<PacienteCompletoDTO> pacientes)
         {
             pacientes.ForEach(p =>
             {
@@ -34,6 +34,17 @@ namespace DatosPacientes.Controllers
                     : new string(p.CodigoRenap.Where(char.IsDigit).ToArray());
 
                 p.NoHistoriaClinica = p.NoHistoriaClinica?.Trim();
+                p.NombrePadre = p.NombrePadre?.Trim();
+                p.NombreMadre = p.NombreMadre?.Trim();
+                p.Nombre_Resposable = p.Nombre_Resposable?.Trim();
+                p.Direccion_Responsable = p.Direccion_Responsable?.Trim();
+
+                if (p.DireccionPaciente != null)
+                {
+                    p.DireccionPaciente.Descripcion = p.DireccionPaciente.Descripcion?.Trim();
+                    p.DireccionPaciente.Municipio = p.DireccionPaciente.Municipio?.Trim();
+                    p.DireccionPaciente.Departamento = p.DireccionPaciente.Departamento?.Trim();
+                }
             });
         }
 
@@ -81,8 +92,8 @@ namespace DatosPacientes.Controllers
                     {
                         Codigo = a.Paciente.Codigo,
                         Persona = a.Paciente.Persona,
-                        Nombres = a.Persona.Nombre1 + " " + (a.Persona.Nombre2 ?? ""),
-                        Apellidos = a.Persona.Apellido1 + " " + (a.Persona.Apellido2 ?? ""),
+                        Nombres = (a.Persona.Nombre1 ?? "").Trim() + " " + (a.Persona.Nombre2 ?? "").Trim(),
+                        Apellidos = (a.Persona.Apellido1 ?? "").Trim() + " " + (a.Persona.Apellido2 ?? "").Trim(),
                         NoHistoriaClinica = a.Paciente.NoHistoriaClinica,
                         CodigoRenap = a.Persona.CodigoRenap, // ✅ se normaliza después
                         FechaNacimiento = a.Persona.FechaNacimiento,
@@ -93,14 +104,15 @@ namespace DatosPacientes.Controllers
                         LugarNacimiento = a.Paciente.LugarNacimiento,
                         Archivo_Fisico = a.Paciente.ArchivoFisico,
                         Nombre_Resposable = a.Paciente.NombreResponsable,
-                        Direccion_Responsable = a.Paciente.DireccionResponsable,
-                        Telefono_Responsable = a.Paciente.TelefonoResponsable,
-                        Direccion_Paciente = a.Persona.DireccionNavigation != null ? a.Persona.DireccionNavigation.Descripcion : "",
-                        Direccion_Paciente_Completa = a.Persona.DireccionNavigation != null
-                            ? (a.Persona.DireccionNavigation.Descripcion ?? "") +
-                              (a.Persona.DireccionNavigation.MunicipioNavigation != null ? ", " + a.Persona.DireccionNavigation.MunicipioNavigation.Nombre : "") +
-                              (a.Persona.DireccionNavigation.DepartamentoNavigation != null ? ", " + a.Persona.DireccionNavigation.DepartamentoNavigation.Nombre : "")
-                            : ""
+
+                        DireccionPaciente = a.Persona.DireccionNavigation != null ? new DireccionPacienteDTO
+                        {
+                            Descripcion = (a.Persona.DireccionNavigation.Descripcion ?? "").Trim() +
+                                          (string.IsNullOrEmpty(a.Persona.DireccionNavigation.Colonia) ? "" : ", Colonia " + a.Persona.DireccionNavigation.Colonia.Trim()) +
+                                          (string.IsNullOrEmpty(a.Persona.DireccionNavigation.Zona) ? "" : ", Zona " + a.Persona.DireccionNavigation.Zona.Trim()),
+                            Municipio = a.Persona.DireccionNavigation.MunicipioNavigation != null ? a.Persona.DireccionNavigation.MunicipioNavigation.Nombre : "",
+                            Departamento = a.Persona.DireccionNavigation.DepartamentoNavigation != null ? a.Persona.DireccionNavigation.DepartamentoNavigation.Nombre : ""
+                        } : null
                     });
 
                 var pacientes = await query.ToListAsync();
@@ -146,8 +158,8 @@ namespace DatosPacientes.Controllers
                     {
                         Codigo = a.Paciente.Codigo,
                         Persona = a.Paciente.Persona,
-                        Nombres = a.Persona.Nombre1 + " " + (a.Persona.Nombre2 ?? ""),
-                        Apellidos = a.Persona.Apellido1 + " " + (a.Persona.Apellido2 ?? ""),
+                        Nombres = (a.Persona.Nombre1 ?? "").Trim() + " " + (a.Persona.Nombre2 ?? "").Trim(),
+                        Apellidos = (a.Persona.Apellido1 ?? "").Trim() + " " + (a.Persona.Apellido2 ?? "").Trim(),
                         NoHistoriaClinica = a.Paciente.NoHistoriaClinica,
                         CodigoRenap = a.Persona.CodigoRenap,
                         FechaNacimiento = a.Persona.FechaNacimiento,
@@ -160,12 +172,14 @@ namespace DatosPacientes.Controllers
                         Nombre_Resposable = a.Paciente.NombreResponsable,
                         Direccion_Responsable = a.Paciente.DireccionResponsable,
                         Telefono_Responsable = a.Paciente.TelefonoResponsable,
-                        Direccion_Paciente = a.Persona.DireccionNavigation != null ? a.Persona.DireccionNavigation.Descripcion : "",
-                        Direccion_Paciente_Completa = a.Persona.DireccionNavigation != null
-                            ? (a.Persona.DireccionNavigation.Descripcion ?? "") +
-                              (a.Persona.DireccionNavigation.MunicipioNavigation != null ? ", " + a.Persona.DireccionNavigation.MunicipioNavigation.Nombre : "") +
-                              (a.Persona.DireccionNavigation.DepartamentoNavigation != null ? ", " + a.Persona.DireccionNavigation.DepartamentoNavigation.Nombre : "")
-                            : ""
+                        DireccionPaciente = a.Persona.DireccionNavigation != null ? new DireccionPacienteDTO
+                        {
+                            Descripcion = (a.Persona.DireccionNavigation.Descripcion ?? "").Trim() +
+                                          (string.IsNullOrEmpty(a.Persona.DireccionNavigation.Colonia) ? "" : ", Colonia " + a.Persona.DireccionNavigation.Colonia.Trim()) +
+                                          (string.IsNullOrEmpty(a.Persona.DireccionNavigation.Zona) ? "" : ", Zona " + a.Persona.DireccionNavigation.Zona.Trim()),
+                            Municipio = a.Persona.DireccionNavigation.MunicipioNavigation != null ? a.Persona.DireccionNavigation.MunicipioNavigation.Nombre : "",
+                            Departamento = a.Persona.DireccionNavigation.DepartamentoNavigation != null ? a.Persona.DireccionNavigation.DepartamentoNavigation.Nombre : ""
+                        } : null
                     });
 
                 var pacientes = await query.ToListAsync();
@@ -262,10 +276,8 @@ namespace DatosPacientes.Controllers
                     {
                         Codigo = a.Paciente.Codigo,
                         Persona = a.Paciente.Persona,
-                        Nombres = a.Persona.Nombre1 + " " + (a.Persona.Nombre2 ?? ""),
-                        Apellidos = a.Persona.Apellido1 + " " +
-                                    (a.Persona.Apellido2 ?? "") + " " +
-                                    (a.Persona.Apellido3 != null ? "de " + a.Persona.Apellido3 : ""),
+                        Nombres = (a.Persona.Nombre1 ?? "").Trim() + " " + (a.Persona.Nombre2 ?? "").Trim(),
+                        Apellidos = (a.Persona.Apellido1 ?? "").Trim() + " " + (a.Persona.Apellido2 ?? "").Trim(),
                         NoHistoriaClinica = a.Paciente.NoHistoriaClinica,
                         CodigoRenap = a.Persona.CodigoRenap,
                         FechaNacimiento = a.Persona.FechaNacimiento,
@@ -278,18 +290,14 @@ namespace DatosPacientes.Controllers
                         Nombre_Resposable = a.Paciente.NombreResponsable,
                         Direccion_Responsable = a.Paciente.DireccionResponsable,
                         Telefono_Responsable = a.Paciente.TelefonoResponsable,
-                        Direccion_Paciente = a.Persona.DireccionNavigation != null
-                            ? a.Persona.DireccionNavigation.Descripcion
-                            : "",
-                        Direccion_Paciente_Completa = a.Persona.DireccionNavigation != null
-                            ? (a.Persona.DireccionNavigation.Descripcion ?? "") +
-                              (a.Persona.DireccionNavigation.MunicipioNavigation != null
-                                  ? ", " + a.Persona.DireccionNavigation.MunicipioNavigation.Nombre
-                                  : "") +
-                              (a.Persona.DireccionNavigation.DepartamentoNavigation != null
-                                  ? ", " + a.Persona.DireccionNavigation.DepartamentoNavigation.Nombre
-                                  : "")
-                            : ""
+                        DireccionPaciente = a.Persona.DireccionNavigation != null ? new DireccionPacienteDTO
+                        {
+                            Descripcion = (a.Persona.DireccionNavigation.Descripcion ?? "").Trim() +
+                                          (string.IsNullOrEmpty(a.Persona.DireccionNavigation.Colonia) ? "" : ", Colonia " + a.Persona.DireccionNavigation.Colonia.Trim()) +
+                                          (string.IsNullOrEmpty(a.Persona.DireccionNavigation.Zona) ? "" : ", Zona " + a.Persona.DireccionNavigation.Zona.Trim()),
+                            Municipio = a.Persona.DireccionNavigation.MunicipioNavigation != null ? a.Persona.DireccionNavigation.MunicipioNavigation.Nombre : "",
+                            Departamento = a.Persona.DireccionNavigation.DepartamentoNavigation != null ? a.Persona.DireccionNavigation.DepartamentoNavigation.Nombre : ""
+                        } : null
                     });
 
                 var pacientes = await query.ToListAsync();
@@ -338,8 +346,8 @@ namespace DatosPacientes.Controllers
                         Codigo = a.Paciente.Codigo,
                         Persona = a.Paciente.Persona,
                         CodigoRenap = a.Persona.CodigoRenap,
-                        Nombres = a.Persona.Nombre1 + " " + (a.Persona.Nombre2 ?? ""),
-                        Apellidos = a.Persona.Apellido1 + " " + (a.Persona.Apellido2 ?? ""),
+                        Nombres = (a.Persona.Nombre1 ?? "").Trim() + " " + (a.Persona.Nombre2 ?? "").Trim(),
+                        Apellidos = (a.Persona.Apellido1 ?? "").Trim() + " " + (a.Persona.Apellido2 ?? "").Trim(),
                         NoHistoriaClinica = a.Paciente.NoHistoriaClinica,
                         FechaNacimiento = a.Persona.FechaNacimiento,
                         Edad = calculateAge(a.Persona.FechaNacimiento ?? DateTime.Now),
@@ -351,12 +359,14 @@ namespace DatosPacientes.Controllers
                         Nombre_Resposable = a.Paciente.NombreResponsable,
                         Direccion_Responsable = a.Paciente.DireccionResponsable,
                         Telefono_Responsable = a.Paciente.TelefonoResponsable,
-                        Direccion_Paciente = a.Persona.DireccionNavigation != null ? a.Persona.DireccionNavigation.Descripcion : "",
-                        Direccion_Paciente_Completa = a.Persona.DireccionNavigation != null
-                            ? (a.Persona.DireccionNavigation.Descripcion ?? "") +
-                              (a.Persona.DireccionNavigation.MunicipioNavigation != null ? ", " + a.Persona.DireccionNavigation.MunicipioNavigation.Nombre : "") +
-                              (a.Persona.DireccionNavigation.DepartamentoNavigation != null ? ", " + a.Persona.DireccionNavigation.DepartamentoNavigation.Nombre : "")
-                            : ""
+                        DireccionPaciente = a.Persona.DireccionNavigation != null ? new DireccionPacienteDTO
+                        {
+                            Descripcion = (a.Persona.DireccionNavigation.Descripcion ?? "").Trim() +
+                                          (string.IsNullOrEmpty(a.Persona.DireccionNavigation.Colonia) ? "" : ", Colonia " + a.Persona.DireccionNavigation.Colonia.Trim()) +
+                                          (string.IsNullOrEmpty(a.Persona.DireccionNavigation.Zona) ? "" : ", Zona " + a.Persona.DireccionNavigation.Zona.Trim()),
+                            Municipio = a.Persona.DireccionNavigation.MunicipioNavigation != null ? a.Persona.DireccionNavigation.MunicipioNavigation.Nombre : "",
+                            Departamento = a.Persona.DireccionNavigation.DepartamentoNavigation != null ? a.Persona.DireccionNavigation.DepartamentoNavigation.Nombre : ""
+                        } : null
                     });
 
                 var pacientes = await query.ToListAsync();
@@ -386,6 +396,8 @@ namespace DatosPacientes.Controllers
 
             var PacienteDto = _mapper.Map<List<PacienteDTO>>(pacientes);
 
+            NormalizarPacienteDTOs(PacienteDto);
+
             foreach (var paciente in PacienteDto)
             {
                 paciente.PersonasLink = Url.Action("GetPersonas", "Busqueda",
@@ -393,6 +405,18 @@ namespace DatosPacientes.Controllers
             }
 
             return PacienteDto;
+        }
+
+        public static void NormalizarPacienteDTOs(List<PacienteDTO> pacientes)
+        {
+            pacientes.ForEach(p =>
+            {
+                p.NoHistoriaClinica = p.NoHistoriaClinica?.Trim();
+                p.NombrePadre = p.NombrePadre?.Trim();
+                p.NombreMadre = p.NombreMadre?.Trim();
+                p.NombreCompleto = p.NombreCompleto?.Trim();
+                p.LugarNacimiento = p.LugarNacimiento?.Trim();
+            });
         }
 
         // ─── Calcular edad ────────────────────────────────────────────────────────

@@ -41,7 +41,7 @@ namespace DatosPacientes.IntegrationTests.Pacientes
 
                 // Assert
                 var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
-                Assert.Equal("NoHistoriaClinica no puede ser nolo o vacío", badRequestResult.Value);
+                Assert.Equal("NoHistoriaClinica no puede ser nulo o vacío", badRequestResult.Value);
             }
             
         }
@@ -59,7 +59,7 @@ namespace DatosPacientes.IntegrationTests.Pacientes
 
                 // Assert
                 var notFoundResult = Assert.IsType<NotFoundObjectResult>(result.Result);
-                Assert.Equal("No se han encontrado pacientes para la NoHistoriaClinica dada.", notFoundResult.Value);
+                Assert.Equal("No se han encontrado pacientes para la Historia Clínica dada.", notFoundResult.Value);
             }
         }
 
@@ -81,7 +81,39 @@ namespace DatosPacientes.IntegrationTests.Pacientes
             }
         }
 
+        [Fact]
+        public async Task GetPacientesByDPI_ReturnsOk_WhenPacientesMatchDPI()
+        {
+            using (var context = Fixture.CreateContext())
+            {
+                // Arrange
+                var controller = new BusquedaController(context, _mapper);
 
+                // Act
+                var result = await controller.GetPacientesByDpi("3593745140801");
 
+                // Assert
+                var okResult = Assert.IsType<OkObjectResult>(result.Result);
+                var returnValue = Assert.IsType<List<PacienteCompletoDTO>>(okResult.Value);
+                Assert.Equal(1, returnValue.Count);
+            }
+        }
+
+        [Fact]
+        public async Task GetPacientesByDPI_ReturnsNotFound_WhenNoPacientesMatchDPI()
+        {
+            using (var context = Fixture.CreateContext())
+            {
+                // Arrange
+                var controller = new BusquedaController(context, _mapper);
+
+                // Act
+                var result = await controller.GetPacientesByDpi("1234567890123");
+
+                // Assert
+                var notFoundResult = Assert.IsType<NotFoundObjectResult>(result.Result);
+                Assert.Equal("No se han encontrado pacientes con el DPI proporcionado.", notFoundResult.Value);
+            }
+        }
     }
 }
