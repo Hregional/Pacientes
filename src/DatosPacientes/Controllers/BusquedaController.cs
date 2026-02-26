@@ -13,6 +13,7 @@ namespace DatosPacientes.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class BusquedaController : ControllerBase
     {
         private readonly RecepcionV2Context _context;
@@ -425,25 +426,36 @@ namespace DatosPacientes.Controllers
             try
             {
                 DateTime now = DateTime.Today;
-                int ageYears = now.Year - birthDate.Year;
-                if (birthDate > now.AddYears(-ageYears)) ageYears--;
 
-                int ageMonths = now.Month - birthDate.Month;
-                if (ageMonths < 0) { ageMonths += 12; ageYears--; }
+                int years = now.Year - birthDate.Year;
+                int months = now.Month - birthDate.Month;
+                int days = now.Day - birthDate.Day;
 
-                int ageDays = now.Day - birthDate.Day;
-                if (ageDays < 0)
+                if (days < 0)
                 {
-                    ageDays += DateTime.DaysInMonth(now.Year, now.Month);
-                    ageMonths--;
+                    months--;
+                    // Obtener los días del mes anterior para sumar al remanente de días
+                    DateTime prevMonth = now.AddMonths(-1);
+                    days += DateTime.DaysInMonth(prevMonth.Year, prevMonth.Month);
                 }
 
-                if (ageYears == 1) return $"{ageYears} Año";
-                if (ageYears > 1) return $"{ageYears} Años";
-                if (ageMonths == 1) return $"{ageMonths} Mes";
-                if (ageMonths > 1) return $"{ageMonths} Meses";
-                if (ageDays == 1) return $"{ageDays} Día";
-                return $"{ageDays} Días";
+                if (months < 0)
+                {
+                    years--;
+                    months += 12;
+                }
+
+                if (years > 0)
+                {
+                    return years == 1 ? "1 Año" : $"{years} Años";
+                }
+                
+                if (months > 0)
+                {
+                    return months == 1 ? "1 Mes" : $"{months} Meses";
+                }
+
+                return days == 1 ? "1 Día" : $"{days} Días";
             }
             catch
             {
