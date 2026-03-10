@@ -130,57 +130,6 @@ namespace DatosPacientes.Controllers
                     $"Error al procesar la búsqueda por Historia Clínica: {ex.Message}");
             }
         }
-        // Formato YYYY-MM-DD
-        [HttpGet("paciente/avanzado/{FechaNacimiento}")]
-        public async Task<ActionResult<List<PacienteCompletoDTO>>> GetPacientesByBirthday(string FechaNacimiento)
-        {
-            try
-            {
-
-                if (string.IsNullOrWhiteSpace(FechaNacimiento))
-                {
-                    return BadRequest("FechaNacimiento no puede ser nolo o vacío");
-                }
-                var query = _context.Pacientes
-                .Join(_context.Personas, p => p.Persona, per => per.Codigo, (p, per) => new { Paciente = p, Persona = per })
-                //Where(a => (a.Paciente.NoHistoriaClinica.Contains(NoHistoriaClinica) || NoHistoriaClinica == "-1"))
-                .Where(a => (a.Persona.FechaNacimiento == Convert.ToDateTime(FechaNacimiento)))
-                .OrderBy(a => a.Persona.Nombre1)
-                .Select(a => new PacienteCompletoDTO()
-                {
-                    Codigo = a.Paciente.Codigo,
-                    Persona = a.Paciente.Persona,
-                    Nombres = a.Persona.Nombre1 + " " + (a.Persona.Nombre2 ?? ""),
-                    Apellidos = a.Persona.Apellido1 + " " + (a.Persona.Apellido2 ?? ""),
-                    NoHistoriaClinica = a.Paciente.NoHistoriaClinica,
-                    FechaNacimiento = a.Persona.FechaNacimiento,
-                    Sexo = a.Persona.Sexo,
-                    NombrePadre = a.Paciente.NombrePadre,
-                    NombreMadre = a.Paciente.NombreMadre,
-                    LugarNacimiento = a.Paciente.LugarNacimiento,
-                    Archivo_Fisico = a.Paciente.ArchivoFisico,
-                    Nombre_Resposable = a.Paciente.NombreResponsable,
-                    Direccion_Responsable = a.Paciente.DireccionResponsable,
-                    Telefono_Responsable = a.Paciente.TelefonoResponsable
-
-                });
-
-                var pacientes = await query.ToListAsync();
-
-                if (pacientes.Count == 0)
-                {
-                    return NotFound("No se han encontrado pacientes para la NoHistoriaClinica dada.");
-                }
-
-                return Ok(pacientes);
-            }
-            catch
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError, "Ha ocurrido un error al procesar la solicitud");
-            }
-
-
-        }
 
         // ─── Búsqueda por Fecha de Nacimiento ─────────────────────────────────────
         [HttpGet("paciente/avanzado/{FechaNacimiento}")]
