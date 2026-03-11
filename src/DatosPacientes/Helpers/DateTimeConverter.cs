@@ -1,19 +1,21 @@
-using System.Text.Json;
-using System.Text.Json.Serialization;
+namespace DatosPacientes.Helpers
+{
+    // Helpers/DateTimeConverter.cs
+    using System.Text.Json;
+    using System.Text.Json.Serialization;
 
 namespace DatosPacientes.Helpers.DatosPacientes.Helpers
-{
-    public class DateTimeConverter : JsonConverter<DateTime>
     {
-        private readonly string _format;
+        {
+            private readonly string _format;
 
         public DateTimeConverter(string format)
-        {
-            _format = format;
-        }
+            {
+                _format = format;
+            }
 
         public override DateTime Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
-        {
+            {
             if (reader.TokenType == JsonTokenType.String)
             {
                 var dateString = reader.GetString();
@@ -23,10 +25,10 @@ namespace DatosPacientes.Helpers.DatosPacientes.Helpers
                 }
             }
             return reader.GetDateTime();
-        }
+            }
 
         public override void Write(Utf8JsonWriter writer, DateTime value, JsonSerializerOptions options)
-        {
+            {
             writer.WriteStringValue(value.ToString(_format));
         }
     }

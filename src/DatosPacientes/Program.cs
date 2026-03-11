@@ -14,7 +14,7 @@ builder.Configuration
     .AddJsonFile("secrets.json", optional: true, reloadOnChange: true)
     .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
 
-// Configuraci髇 de Keycloak (puedes ajustarlo en appsettings o secrets.json)
+// Configuraci贸n de Keycloak (puedes ajustarlo en appsettings o secrets.json)
 var keycloakAuthority = builder.Configuration["Keycloak:Authority"] ?? "http://localhost:8080/realms/master";
 var keycloakAudience = builder.Configuration["Keycloak:Audience"] ?? "account";
 var keycloakClientId = builder.Configuration["Keycloak:ClientId"] ?? "api-pacientes";
@@ -34,7 +34,7 @@ builder.Services.AddDbContext<RecepcionV2Context>(options =>
 
 builder.Services.AddEndpointsApiExplorer();
 
-// Configuraci髇 de Swagger con Seguridad OAuth2/OpenID Connect
+// Configuraci贸n de Swagger con Seguridad OAuth2/OpenID Connect
 builder.Services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("v1", new OpenApiInfo { Title = "Datos Pacientes API", Version = "v1" });
@@ -71,7 +71,7 @@ builder.Services.AddSwaggerGen(options =>
 
 builder.Services.AddAutoMapper(typeof(Program).Assembly);
 
-// Configuraci髇 de Autenticaci髇 con Keycloak
+// Configuraci贸n de Autenticaci贸n con Keycloak
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -80,10 +80,10 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
         {
             ValidateIssuer = true,
-            ValidateAudience = false, // ? Deshabilitado para permitir m鷏tiples audiences de Keycloak
+            ValidateAudience = false, // ? Deshabilitado para permitir m煤ltiples audiences de Keycloak
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-            // Alternativa: Validar m鷏tiples audiences
+            // Alternativa: Validar m煤ltiples audiences
             // ValidAudiences = new[] { "api-pacientes", "account" }
         };
     });
@@ -96,16 +96,7 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI(options =>
-    {
-        options.SwaggerEndpoint("/swagger/v1/swagger.json", "Datos Pacientes API v1");
-        options.OAuthClientId(keycloakClientId);
-        options.OAuthAppName("Datos Pacientes - Keycloak");
-        options.OAuthUsePkce();
-
-        // Si tu cliente requiere ClientSecret, descomenta la siguiente l韓ea
-        // options.OAuthClientSecret(keycloakClientSecret);
-    });
+    app.UseSwaggerUI();
 }
 
 app.UseHttpsRedirection();
