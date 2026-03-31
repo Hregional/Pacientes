@@ -24,7 +24,6 @@ namespace DatosPacientes.DTOs
             get { return _sexo; }
             set { _sexo = (value == "0") ? "M" : "F"; }
         }
-        public string? CodigoRenap { get; set; }
         public string? Edad { get; set; }
         public string? Nombre_Resposable { get; set; }
         public string? Direccion_Responsable { get; set; }

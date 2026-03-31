@@ -1,13 +1,12 @@
 namespace DatosPacientes.Helpers
 {
-    // Helpers/DateTimeConverter.cs
+    using System;
     using System.Text.Json;
     using System.Text.Json.Serialization;
 
-namespace DatosPacientes.Helpers.DatosPacientes.Helpers
+    public class DateTimeConverter : JsonConverter<DateTime>
     {
-        {
-            private readonly string _format;
+        private readonly string _format;
 
         public DateTimeConverter(string format)
             {

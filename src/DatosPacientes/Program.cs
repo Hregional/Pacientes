@@ -1,10 +1,13 @@
 using DatosPacientes.Configuration;
-using DatosPacientes.Helpers.DatosPacientes.Helpers;
+using DatosPacientes.Helpers;
 using DatosPacientes.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using System.Text.Json.Serialization;
+
+// Activar logs detallados de identidad (PII) para ver el error real (útil para depurar problemas de tokens)
+Microsoft.IdentityModel.Logging.IdentityModelEventSource.ShowPII = true;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,8 +17,10 @@ builder.Configuration
     .AddJsonFile("secrets.json", optional: true, reloadOnChange: true)
     .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
 
-// Configuración de Keycloak (puedes ajustarlo en appsettings o secrets.json)
-var keycloakAuthority = builder.Configuration["Keycloak:Authority"] ?? "http://localhost:8080/realms/master";
+
+var keycloakAuthority = builder.Configuration["Keycloak:Authority"]
+    ?? "http://192.168.1.18:8080/realms/myrealm";
+
 var keycloakAudience = builder.Configuration["Keycloak:Audience"] ?? "account";
 var keycloakClientId = builder.Configuration["Keycloak:ClientId"] ?? "api-pacientes";
 var keycloakClientSecret = builder.Configuration["Keycloak:ClientSecret"];
@@ -71,20 +76,52 @@ builder.Services.AddSwaggerGen(options =>
 
 builder.Services.AddAutoMapper(typeof(Program).Assembly);
 
-// Configuración de Autenticación con Keycloak
+// Configuración de Keycloak
+//var keycloakAuthority = builder.Configuration["Keycloak:Authority"]
+    //?? "http://192.168.1.18:8080/realms/myrealm";
+
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
         options.Authority = keycloakAuthority;
-        options.RequireHttpsMetadata = requireHttps;
+        options.RequireHttpsMetadata = false;
+        options.MetadataAddress = $"{keycloakAuthority.TrimEnd('/')}/.well-known/openid-configuration";
+
         options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
         {
             ValidateIssuer = true,
-            ValidateAudience = false, // ? Deshabilitado para permitir múltiples audiences de Keycloak
+            ValidIssuer = keycloakAuthority,        // usa la variable, no hardcodeado
+            ValidateAudience = false,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-            // Alternativa: Validar múltiples audiences
-            // ValidAudiences = new[] { "api-pacientes", "account" }
+            NameClaimType = "preferred_username"
+        };
+
+        options.BackchannelHttpHandler = new HttpClientHandler
+        {
+            ServerCertificateCustomValidationCallback =
+                HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+        };
+
+        options.Events = new JwtBearerEvents
+        {
+            OnAuthenticationFailed = context =>
+            {
+                var logger = context.HttpContext.RequestServices
+                    .GetRequiredService<ILogger<Program>>();
+                logger.LogError("[Auth FAILED] Tipo: {tipo} | Mensaje: {msg}",
+                    context.Exception.GetType().Name,
+                    context.Exception.Message);
+                return Task.CompletedTask;
+            },
+            OnTokenValidated = context =>
+            {
+                var logger = context.HttpContext.RequestServices
+                    .GetRequiredService<ILogger<Program>>();
+                logger.LogInformation("[Auth SUCCESS] Usuario: {user}",
+                    context.Principal?.Identity?.Name);
+                return Task.CompletedTask;
+            }
         };
     });
 
@@ -99,7 +136,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+// Comentado para usar solo HTTP en el contenedor y evitar la advertencia de redirección HTTPS
+// app.UseHttpsRedirection();
 
 app.UseCors(x => x
     .AllowAnyOrigin()
