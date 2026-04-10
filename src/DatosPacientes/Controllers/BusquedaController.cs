@@ -25,6 +25,12 @@ namespace DatosPacientes.Controllers
             _mapper = mapper;
         }
 
+        [HttpGet("test")]
+        public ActionResult<string> Test()
+        {
+            return Ok("API de búsqueda de pacientes está funcionando correctamente.");
+        }
+
         // ─── Método auxiliar: normaliza DPI y recorta espacios ───────────────────
         public static void NormalizarPacientes(List<PacienteCompletoDTO> pacientes)
         {
