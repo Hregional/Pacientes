@@ -1,13 +1,16 @@
-﻿using AutoMapper;
+using MapsterMapper;
+using Mapster;
 using DatosPacientes.Controllers;
 using DatosPacientes.DTOs;
 using DatosPacientes.Models;
+using DatosPacientes.Mappings;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Xunit;
 
 namespace DatosPacientes.IntegrationTests.Pacientes
 {
@@ -19,10 +22,9 @@ namespace DatosPacientes.IntegrationTests.Pacientes
         public BusquedaPacienteTests(SharedDatabaseFixture fixture)
         {
             Fixture = fixture;
-            _mapper = new MapperConfiguration(cfg =>
-            {
-                cfg.AddProfile<AutoMapperProfile>();
-            }).CreateMapper();
+            var config = new TypeAdapterConfig();
+            new MapsterConfig().Register(config);
+            _mapper = new Mapper(config);
         }
 
         [Fact]
@@ -34,7 +36,7 @@ namespace DatosPacientes.IntegrationTests.Pacientes
                 // Arrange
                 var controller = new BusquedaController(context, _mapper);
 
-            string NoHistoriaClinica = null;
+            string NoHistoriaClinica = null!;
 
                 // Act
                 var result = await controller.GetPersonas(NoHistoriaClinica);
@@ -77,7 +79,7 @@ namespace DatosPacientes.IntegrationTests.Pacientes
                 // Assert
                 var okResult = Assert.IsType<OkObjectResult>(result.Result);
                 var returnValue = Assert.IsType<List<PacienteCompletoDTO>>(okResult.Value);
-                Assert.Equal(1, returnValue.Count);
+                Assert.Single(returnValue);
             }
         }
 
@@ -95,7 +97,7 @@ namespace DatosPacientes.IntegrationTests.Pacientes
                 // Assert
                 var okResult = Assert.IsType<OkObjectResult>(result.Result);
                 var returnValue = Assert.IsType<List<PacienteCompletoDTO>>(okResult.Value);
-                Assert.Equal(1, returnValue.Count);
+                Assert.Single(returnValue);
             }
         }
 

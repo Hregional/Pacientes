@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using System.Text.Json.Serialization;
+using Mapster;
+using MapsterMapper;
 
 // Activar logs detallados de identidad (PII) para ver el error real (útil para depurar problemas de tokens)
 Microsoft.IdentityModel.Logging.IdentityModelEventSource.ShowPII = true;
@@ -74,7 +76,8 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
-builder.Services.AddAutoMapper(typeof(Program).Assembly);
+// Configuración de Mapster
+builder.Services.AddMapster();
 
 // Configuración de Keycloak
 //var keycloakAuthority = builder.Configuration["Keycloak:Authority"]

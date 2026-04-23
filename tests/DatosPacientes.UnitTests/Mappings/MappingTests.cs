@@ -1,31 +1,40 @@
-﻿using AutoMapper;
+using Mapster;
+using MapsterMapper;
+using DatosPacientes.Mappings;
+using DatosPacientes.Models;
+using DatosPacientes.DTOs;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Xunit;
 
 namespace DatosPacientes.UnitTests.Mappings
 {
     public class MappingTests
     {
-        private readonly IConfigurationProvider _configuration;
+        private readonly TypeAdapterConfig _config;
         private readonly IMapper _mapper;
 
         public MappingTests()
         {
-            _configuration = new MapperConfiguration(cfg =>
-            {
-                cfg.AddProfile<AutoMapperProfile>();
-            });
-
-            _mapper = _configuration.CreateMapper();
+            _config = new TypeAdapterConfig();
+            new MapsterConfig().Register(_config);
+            _mapper = new Mapper(_config);
         }
 
         [Fact]
-        public void ShouldBeValidConfiguration()
+        public void ShouldMapPacienteToPacienteDTO()
         {
-            _configuration.AssertConfigurationIsValid();
+            var source = new Paciente
+            {
+                Codigo = 1,
+                NombreCompleto = "Test User",
+                NoHistoriaClinica = "12345"
+            };
+
+            var result = _mapper.Map<PacienteDTO>(source);
+
+            Assert.Equal(source.Codigo, result.Codigo);
+            Assert.Equal(source.NombreCompleto, result.NombreCompleto);
+            Assert.Equal(source.NoHistoriaClinica, result.NoHistoriaClinica);
         }
     }
 }

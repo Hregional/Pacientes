@@ -1,12 +1,11 @@
-﻿using DatosPacientes.Models;
+using DatosPacientes.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Data.SqlClient;
 using Microsoft.AspNetCore.Mvc;
 using DatosPacientes.Models.SP;
-using AutoMapper;
+using MapsterMapper;
+using Mapster;
 using DatosPacientes.DTOs;
-using AutoMapper.QueryableExtensions;
-using Microsoft.AspNetCore.Mvc.Routing;
 using Microsoft.AspNetCore.Authorization;
 
 namespace DatosPacientes.Controllers

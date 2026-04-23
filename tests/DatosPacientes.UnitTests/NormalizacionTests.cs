@@ -1,7 +1,6 @@
 ﻿using Xunit;
 using DatosPacientes.DTOs;
 using DatosPacientes.Controllers;
-using DatosPacientes.DTOs;
 using DatosPacientes.Models.SP;
 using System;
 using System.Collections.Generic;
