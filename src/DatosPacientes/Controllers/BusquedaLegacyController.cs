@@ -25,7 +25,7 @@ namespace DatosPacientes.Controllers
         {
             var resultado = await _context.PacienteSeleccionarCatalogo.
                 FromSqlRaw("EXEC dbo.PacienteSeleccionarCatalogoPorNoHistoriaClinica @NoHistoriaClinica = {0}",
-                NohistoriaClinica).ToListAsync();
+                NohistoriaClinica).AsNoTracking().ToListAsync();
 
             NormalizarLegacy(resultado);
             return resultado;
@@ -52,7 +52,7 @@ namespace DatosPacientes.Controllers
             var resultado = await _context.PacienteSeleccionarCatalogo.
                 FromSqlRaw("EXEC dbo.PacienteSeleccionarPorNombre @PrimerNombre = {0}," +
                 " @SegundoNombre = {1}, @PrimerApellido = {2}, @SegundoApellido = {3}, @TercerApellido = {4}",
-                PrimerNombre, SegundoNombre, PrimerApellido, SegundoApellido, TercerApellido).ToListAsync();
+                PrimerNombre, SegundoNombre, PrimerApellido, SegundoApellido, TercerApellido).AsNoTracking().ToListAsync();
 
             NormalizarLegacy(resultado);
             return resultado;
@@ -70,6 +70,7 @@ namespace DatosPacientes.Controllers
 
             var resultado = await _context.PacienteSeleccionarCatalogo
                 .FromSqlRaw("EXEC dbo.PacienteSeleccionarCatalogoPorCodigoRENAP @RENAP = {0}", cuiSoloNumeros)
+                .AsNoTracking()
                 .ToListAsync();
 
             NormalizarLegacy(resultado);

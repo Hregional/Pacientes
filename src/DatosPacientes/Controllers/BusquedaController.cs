@@ -55,7 +55,7 @@ namespace DatosPacientes.Controllers
         }
 
         // ─── Método auxiliar: obtiene estado requerido desde parametros_generales ─
-        private async Task<int> GetEstadoRequerido()
+        /*private async Task<int> GetEstadoRequerido()
         {
             int? paramVerEliminados = null;
             var conn = _context.Database.GetDbConnection();
@@ -71,7 +71,7 @@ namespace DatosPacientes.Controllers
                 paramVerEliminados = Convert.ToInt32(result);
 
             return (paramVerEliminados == 1) ? 1 : 0;
-        }
+        }*/
 
         // ─── Búsqueda por Historia Clínica ────────────────────────────────────────
         [HttpGet("paciente/{NoHistoriaClinica}")]
@@ -82,15 +82,16 @@ namespace DatosPacientes.Controllers
                 if (string.IsNullOrWhiteSpace(NoHistoriaClinica))
                     return BadRequest("NoHistoriaClinica no puede ser nulo o vacío");
 
-                int estadoRequerido = await GetEstadoRequerido();
+             //   int estadoRequerido = await GetEstadoRequerido();
 
                 var query = _context.Pacientes
+                    .AsNoTracking() // ✅ mejora rendimiento para solo lectura
                     .Join(_context.Personas,
                         p => p.Persona,
                         per => per.Codigo,
                         (p, per) => new { Paciente = p, Persona = per })
                     .Where(a =>
-                        a.Persona.Estado == estadoRequerido &&
+                       // a.Persona.Estado == estadoRequerido &&
                         (NoHistoriaClinica == "-1" ||
                          a.Paciente.NoHistoriaClinica.Contains(NoHistoriaClinica)))
                     .OrderBy(a => a.Persona.Nombre1)
@@ -149,15 +150,16 @@ namespace DatosPacientes.Controllers
                 if (!DateTime.TryParse(FechaNacimiento, out DateTime fechaParsed))
                     return BadRequest("Formato de fecha inválido. Use YYYY-MM-DD.");
 
-                int estadoRequerido = await GetEstadoRequerido();
+                //int estadoRequerido = await GetEstadoRequerido();
 
                 var query = _context.Pacientes
+                    .AsNoTracking()
                     .Join(_context.Personas,
                         p => p.Persona,
                         per => per.Codigo,
                         (p, per) => new { Paciente = p, Persona = per })
                     .Where(a =>
-                        a.Persona.Estado == estadoRequerido &&
+                      //  a.Persona.Estado == estadoRequerido &&
                         a.Persona.FechaNacimiento == fechaParsed)
                     .OrderBy(a => a.Persona.Nombre1)
                     .Select(a => new PacienteCompletoDTO()
@@ -221,6 +223,7 @@ namespace DatosPacientes.Controllers
             try
             {
                 var query = _context.Pacientes
+                    .AsNoTracking() // ✅ mejora rendimiento para solo lectura
                     .Join(_context.Personas,
                         p => p.Persona,
                         per => per.Codigo,
@@ -231,51 +234,51 @@ namespace DatosPacientes.Controllers
     // PrimerNombre - búsqueda sin acento (CI_AI)
     (EF.Functions.Like(
         EF.Functions.Collate(a.Persona.Nombre1, "SQL_Latin1_General_CP1_CI_AI"),
-        $"%{PrimerNombre}%") ||
+        $"{PrimerNombre}%") ||
      EF.Functions.Like(
         EF.Functions.Collate(a.Persona.Nombre2 ?? "", "SQL_Latin1_General_CP1_CI_AI"),
-        $"%{PrimerNombre}%")) &&
+        $"{PrimerNombre}%")) &&
 
     (SegundoNombre == "" ||
      EF.Functions.Like(
         EF.Functions.Collate(a.Persona.Nombre1, "SQL_Latin1_General_CP1_CI_AI"),
-        $"%{SegundoNombre}%") ||
+        $"{SegundoNombre}%") ||
      EF.Functions.Like(
         EF.Functions.Collate(a.Persona.Nombre2 ?? "", "SQL_Latin1_General_CP1_CI_AI"),
-        $"%{SegundoNombre}%")) &&
+        $"{SegundoNombre}%")) &&
 
     // PrimerApellido - búsqueda sin acento
     (EF.Functions.Like(
         EF.Functions.Collate(a.Persona.Apellido1, "SQL_Latin1_General_CP1_CI_AI"),
-        $"%{PrimerApellido}%") ||
+        $"{PrimerApellido}%") ||
      EF.Functions.Like(
         EF.Functions.Collate(a.Persona.Apellido2 ?? "", "SQL_Latin1_General_CP1_CI_AI"),
-        $"%{PrimerApellido}%") ||
+        $"{PrimerApellido}%") ||
      EF.Functions.Like(
         EF.Functions.Collate(a.Persona.Apellido3 ?? "", "SQL_Latin1_General_CP1_CI_AI"),
-        $"%{PrimerApellido}%")) &&
+        $"{PrimerApellido}%")) &&
 
     (SegundoApellido == "" ||
      EF.Functions.Like(
         EF.Functions.Collate(a.Persona.Apellido1, "SQL_Latin1_General_CP1_CI_AI"),
-        $"%{SegundoApellido}%") ||
+        $"{SegundoApellido}%") ||
      EF.Functions.Like(
         EF.Functions.Collate(a.Persona.Apellido2 ?? "", "SQL_Latin1_General_CP1_CI_AI"),
-        $"%{SegundoApellido}%") ||
+        $"{SegundoApellido}%") ||
      EF.Functions.Like(
         EF.Functions.Collate(a.Persona.Apellido3 ?? "", "SQL_Latin1_General_CP1_CI_AI"),
-        $"%{SegundoApellido}%")) &&
+        $"{SegundoApellido}%")) &&
 
     (TercerApellido == "" ||
      EF.Functions.Like(
         EF.Functions.Collate(a.Persona.Apellido1, "SQL_Latin1_General_CP1_CI_AI"),
-        $"%{TercerApellido}%") ||
+        $"{TercerApellido}%") ||
      EF.Functions.Like(
         EF.Functions.Collate(a.Persona.Apellido2 ?? "", "SQL_Latin1_General_CP1_CI_AI"),
-        $"%{TercerApellido}%") ||
+        $"{TercerApellido}%") ||
      EF.Functions.Like(
         EF.Functions.Collate(a.Persona.Apellido3 ?? "", "SQL_Latin1_General_CP1_CI_AI"),
-        $"%{TercerApellido}%"))
+        $"{TercerApellido}%"))
                     )
                     .OrderBy(a => a.Persona.Nombre1)
                     .Select(a => new PacienteCompletoDTO()
@@ -333,18 +336,29 @@ namespace DatosPacientes.Controllers
                 string cuiLimpio = new string(cui.Where(char.IsDigit).ToArray());
                 if (cui == "-1") cuiLimpio = "-1";
 
-                int estadoRequerido = await GetEstadoRequerido(); // ✅ reutiliza método
+                // ✅ SARGable: Generamos los posibles formatos del DPI en memoria (C#)
+                // Esto evita el Table Scan causado por el uso dinámico de Replace() sobre la columna en DB
+                string cuiFormato1 = cuiLimpio; 
+                string cuiFormato2 = cuiLimpio.Length >= 13 ? $"{cuiLimpio.Substring(0, 4)} {cuiLimpio.Substring(4, 5)} {cuiLimpio.Substring(9)}" : cuiLimpio;
+                string cuiFormato3 = cuiLimpio.Length >= 13 ? $"{cuiLimpio.Substring(0, 4)}-{cuiLimpio.Substring(4, 5)}-{cuiLimpio.Substring(9)}" : cuiLimpio;
+                string cuiFormato4 = $"dpi:{cuiLimpio}";
+
+                //int estadoRequerido = await GetEstadoRequerido(); // ✅ reutiliza método
 
                 var query = _context.Pacientes
+                    .AsNoTracking()
                     .Join(_context.Personas,
                         p => p.Persona,
                         per => per.Codigo,
                         (p, per) => new { Paciente = p, Persona = per })
                     .Where(a =>
-                        a.Persona.Estado == estadoRequerido &&
+                    //    a.Persona.Estado == estadoRequerido &&
                         (cuiLimpio == "-1" ||
-                         (a.Persona.CodigoRenap != null && // ✅ protección null
-                          a.Persona.CodigoRenap.Replace(" ", "").Replace("-", "").Replace("dpi:", "") == cuiLimpio))
+                         (a.Persona.CodigoRenap != null && // ✅ Permite el uso de índices de SQL Server
+                          (a.Persona.CodigoRenap == cuiFormato1 ||
+                           a.Persona.CodigoRenap == cuiFormato2 ||
+                           a.Persona.CodigoRenap == cuiFormato3 ||
+                           a.Persona.CodigoRenap == cuiFormato4)))
                     )
                     .OrderBy(a => a.Persona.Nombre1)
                     .Select(a => new PacienteCompletoDTO()
@@ -395,6 +409,7 @@ namespace DatosPacientes.Controllers
         public async Task<List<PacienteDTO>> GetAllPatients(int pageNumber = 1, int pageSize = 50)
         {
             var pacientes = await _context.Pacientes
+                .AsNoTracking()
                 .OrderByDescending(p => p.Codigo)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
