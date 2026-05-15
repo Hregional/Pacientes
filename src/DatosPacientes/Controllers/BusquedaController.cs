@@ -93,7 +93,7 @@ namespace DatosPacientes.Controllers
                     .Where(a =>
                        // a.Persona.Estado == estadoRequerido &&
                         (NoHistoriaClinica == "-1" ||
-                         a.Paciente.NoHistoriaClinica.Contains(NoHistoriaClinica)))
+                         a.Paciente.NoHistoriaClinica.Trim().StartsWith(NoHistoriaClinica)))
                     .OrderBy(a => a.Persona.Nombre1)
                     .Select(a => new PacienteCompletoDTO()
                     {
@@ -111,6 +111,8 @@ namespace DatosPacientes.Controllers
                         LugarNacimiento = a.Paciente.LugarNacimiento,
                         Archivo_Fisico = a.Paciente.ArchivoFisico,
                         Nombre_Resposable = a.Paciente.NombreResponsable,
+                        Telefono_Responsable = a.Paciente.TelefonoResponsable,
+                        Direccion_Responsable = a.Paciente.DireccionResponsable,
 
                         DireccionPaciente = a.Persona.DireccionNavigation != null ? new DireccionPacienteDTO
                         {
