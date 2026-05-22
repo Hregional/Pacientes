@@ -1,69 +1,134 @@
 using DatosPacientes.Configuration;
+using DatosPacientes.Helpers;
 using DatosPacientes.Models;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using System.Text.Json.Serialization;
+using Mapster;
+using MapsterMapper;
 
+// Activar logs detallados de identidad (PII) para ver el error real (煤til para depurar problemas de tokens)
+Microsoft.IdentityModel.Logging.IdentityModelEventSource.ShowPII = true;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Cargar secretos adicionales si existen
 builder.Configuration
-    .SetBasePath(Directory.GetCurrentDirectory()).AddJsonFile("secrets.json", optional: true, reloadOnChange: true);
+    .SetBasePath(Directory.GetCurrentDirectory())
+    .AddJsonFile("secrets.json", optional: true, reloadOnChange: true)
+    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
 
-// Acceder a la configuraci髇 de la secci髇 AdminApiConfiguration
-//var adminApiConfiguration = builder.Configuration.GetSection(nameof(AdminApiConfiguration)).Get<AdminApiConfiguration>();
 
-//builder.Services.AddSingleton(adminApiConfiguration);
+var keycloakAuthority = builder.Configuration["Keycloak:Authority"]
+    ?? "http://192.168.1.18:8080/realms/myrealm";
 
+var keycloakAudience = builder.Configuration["Keycloak:Audience"] ?? "account";
+var keycloakClientId = builder.Configuration["Keycloak:ClientId"] ?? "api-pacientes";
+var keycloakClientSecret = builder.Configuration["Keycloak:ClientSecret"];
+var requireHttps = builder.Configuration.GetValue<bool>("Keycloak:RequireHttpsMetadata");
 
 // Add services to the container.
+builder.Services.AddControllers()
+    .AddJsonOptions(x =>
+    {
+        x.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+        x.JsonSerializerOptions.Converters.Add(new DateTimeConverter("dd-MM-yyyy"));
+    });
 
-builder.Services.AddControllers(
-
-    ).AddJsonOptions(x =>
-                x.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles);
 builder.Services.AddDbContext<RecepcionV2Context>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("cnDatabase")));
 
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 
-// Add security definition
-builder.Services.AddSwaggerGen(
-    options =>
-    {
-      // options.SwaggerDoc(adminApiConfiguration.ApiVersion, new OpenApiInfo { Title = adminApiConfiguration.ApiName, Version = adminApiConfiguration.ApiVersion });
+// Configuraci贸n de Swagger con Seguridad OAuth2/OpenID Connect
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo { Title = "Datos Pacientes API", Version = "v1" });
 
-       /* options.AddSecurityDefinition("oauth2", new OpenApiSecurityScheme
+    options.AddSecurityDefinition("oauth2", new OpenApiSecurityScheme
+    {
+        Type = SecuritySchemeType.OAuth2,
+        Flows = new OpenApiOAuthFlows
         {
-            Type = SecuritySchemeType.OAuth2,
-            Flows = new OpenApiOAuthFlows
+            AuthorizationCode = new OpenApiOAuthFlow
             {
-                AuthorizationCode = new OpenApiOAuthFlow
+                AuthorizationUrl = new Uri($"{keycloakAuthority}/protocol/openid-connect/auth"),
+                TokenUrl = new Uri($"{keycloakAuthority}/protocol/openid-connect/token"),
+                Scopes = new Dictionary<string, string>
                 {
-                    AuthorizationUrl = new Uri($"{adminApiConfiguration.IdentityServerBaseUrl}/connect/authorize"),
-                    TokenUrl = new Uri($"{adminApiConfiguration.IdentityServerBaseUrl}/connect/token"),
-                    Scopes = new Dictionary<string, string> {
-                                { adminApiConfiguration.OidcApiName, adminApiConfiguration.ApiName }
-                            }
+                    { "openid", "OpenID Connect" },
+                    { "profile", "User Profile" }
                 }
             }
-        });
-        options.OperationFilter<AuthorizeCheckOperationFilter>();
-       */
+        }
     });
 
-builder.Services.AddAutoMapper(typeof(Program).Assembly);
-
-/*
-// Add authentication
-builder.Services.AddAuthentication("Bearer")
-    .AddJwtBearer("Bearer", options =>
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
-        options.Authority = adminApiConfiguration.IdentityServerBaseUrl;
-        options.RequireHttpsMetadata = true;
-        options.Audience = adminApiConfiguration.OidcApiName;
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "oauth2" }
+            },
+            new[] { "openid", "profile" }
+        }
     });
-*/
+});
+
+// Configuraci贸n de Mapster
+builder.Services.AddMapster();
+
+// Configuraci贸n de Keycloak
+//var keycloakAuthority = builder.Configuration["Keycloak:Authority"]
+    //?? "http://192.168.1.18:8080/realms/myrealm";
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.Authority = keycloakAuthority;
+        options.RequireHttpsMetadata = false;
+        options.MetadataAddress = $"{keycloakAuthority.TrimEnd('/')}/.well-known/openid-configuration";
+
+        options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidIssuer = keycloakAuthority,        // usa la variable, no hardcodeado
+            ValidateAudience = false,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            NameClaimType = "preferred_username"
+        };
+
+        options.BackchannelHttpHandler = new HttpClientHandler
+        {
+            ServerCertificateCustomValidationCallback =
+                HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+        };
+
+        options.Events = new JwtBearerEvents
+        {
+            OnAuthenticationFailed = context =>
+            {
+                var logger = context.HttpContext.RequestServices
+                    .GetRequiredService<ILogger<Program>>();
+                logger.LogError("[Auth FAILED] Tipo: {tipo} | Mensaje: {msg}",
+                    context.Exception.GetType().Name,
+                    context.Exception.Message);
+                return Task.CompletedTask;
+            },
+            OnTokenValidated = context =>
+            {
+                var logger = context.HttpContext.RequestServices
+                    .GetRequiredService<ILogger<Program>>();
+                logger.LogInformation("[Auth SUCCESS] Usuario: {user}",
+                    context.Principal?.Identity?.Name);
+                return Task.CompletedTask;
+            }
+        };
+    });
+
+builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
@@ -74,16 +139,16 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
-
-//app.UseAuthentication();
-
-//app.UseAuthorization();
+// Comentado para usar solo HTTP en el contenedor y evitar la advertencia de redirecci贸n HTTPS
+// app.UseHttpsRedirection();
 
 app.UseCors(x => x
     .AllowAnyOrigin()
-       .AllowAnyMethod()
-          .AllowAnyHeader());
+    .AllowAnyMethod()
+    .AllowAnyHeader());
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapControllers();
 

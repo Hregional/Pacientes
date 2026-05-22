@@ -9,7 +9,7 @@ namespace DatosPacientes.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    //[Authorize]
+    [Authorize]
     public class BusquedaLegacyController : ControllerBase
     {
 
@@ -20,17 +20,19 @@ namespace DatosPacientes.Controllers
             _context = context;
         }
         [HttpGet("{NohistoriaClinica}")]
-        public Task<List<PacienteSeleccionarCatalogo>>
+        public async Task<List<PacienteSeleccionarCatalogo>>
             GetSeleccionarPorNoHistoriaClinica(string NohistoriaClinica)
         {
-            var resultado = _context.PacienteSeleccionarCatalogo.
+            var resultado = await _context.PacienteSeleccionarCatalogo.
                 FromSqlRaw("EXEC dbo.PacienteSeleccionarCatalogoPorNoHistoriaClinica @NoHistoriaClinica = {0}",
-                NohistoriaClinica).ToListAsync();
+                NohistoriaClinica).AsNoTracking().ToListAsync();
+
+            NormalizarLegacy(resultado);
             return resultado;
         }
 
         [HttpGet("nombre")]
-        public Task<List<PacienteSeleccionarCatalogo>>
+        public async Task<List<PacienteSeleccionarCatalogo>>
             GetSeleccionarPorNombre(
 
             string PrimerNombre,
@@ -47,21 +49,45 @@ namespace DatosPacientes.Controllers
             SegundoApellido ??= DBNull.Value.ToString();
             TercerApellido ??= DBNull.Value.ToString();
 
-            var resultado = _context.PacienteSeleccionarCatalogo.
+            var resultado = await _context.PacienteSeleccionarCatalogo.
                 FromSqlRaw("EXEC dbo.PacienteSeleccionarPorNombre @PrimerNombre = {0}," +
                 " @SegundoNombre = {1}, @PrimerApellido = {2}, @SegundoApellido = {3}, @TercerApellido = {4}",
-                PrimerNombre, SegundoNombre, PrimerApellido, SegundoApellido, TercerApellido).ToListAsync();
+                PrimerNombre, SegundoNombre, PrimerApellido, SegundoApellido, TercerApellido).AsNoTracking().ToListAsync();
+
+            NormalizarLegacy(resultado);
             return resultado;
         }
 
         [HttpGet("avanzado/{cui}")]
-        public Task<List<PacienteSeleccionarCatalogo>>
-            GetSeleccionarPorCui(string cui)
+        public async Task<List<PacienteSeleccionarCatalogo>> GetSeleccionarPorCui(string cui)
         {
-            var resultado = _context.PacienteSeleccionarCatalogo.
-                FromSqlRaw("EXEC dbo.PacienteSeleccionarCatalogoPorCodigoRENAP @RENAP = {0}",
-                cui).ToListAsync();
+            // Esto elimina cualquier carácter que no sea un número (espacios, guiones, letras)
+            string cuiSoloNumeros = new string(cui.Where(char.IsDigit).ToArray());
+
+            // Si después de limpiar queda vacío (o era "-1"), mantenemos el comportamiento original del SP
+            if (string.IsNullOrEmpty(cuiSoloNumeros) && cui != "-1") cuiSoloNumeros = "0";
+            else if (cui == "-1") cuiSoloNumeros = "-1";
+
+            var resultado = await _context.PacienteSeleccionarCatalogo
+                .FromSqlRaw("EXEC dbo.PacienteSeleccionarCatalogoPorCodigoRENAP @RENAP = {0}", cuiSoloNumeros)
+                .AsNoTracking()
+                .ToListAsync();
+
+            NormalizarLegacy(resultado);
             return resultado;
+        }
+
+        public static void NormalizarLegacy(List<PacienteSeleccionarCatalogo> pacientes)
+        {
+            pacientes.ForEach(p =>
+            {
+                p.Padre = p.Padre?.Trim();
+                p.Madre = p.Madre?.Trim();
+                p.Nombres = p.Nombres?.Trim();
+                p.Apellidos = p.Apellidos?.Trim();
+                p.Historia_Clinica = p.Historia_Clinica?.Trim();
+                p.Procedencia = p.Procedencia?.Trim();
+            });
         }
     }
 }
