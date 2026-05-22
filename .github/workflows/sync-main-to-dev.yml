@@ -1,5 +1,8 @@
 name: Sync Main to Development
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 # El flujo se dispara SOLO cuando hay un push (o merge) en la rama main
 on:
   push:
@@ -24,11 +27,11 @@ jobs:
         run: |
           # Crear un nombre único para la rama usando el ID del workflow
           BRANCH_NAME="sync/main-to-dev-${{ github.run_id }}"
-          
+
           git checkout main
           git checkout -b $BRANCH_NAME
           git push origin $BRANCH_NAME
-          
+
           # Guardar el nombre de la rama para el siguiente paso
           echo "SYNC_BRANCH=$BRANCH_NAME" >> $GITHUB_ENV
 
