@@ -19,14 +19,16 @@ builder.Configuration
     .AddJsonFile("secrets.json", optional: true, reloadOnChange: true)
     .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
 
+// Configuración de Keycloak
+var keycloakAuthority = builder.Configuration["KEYCLOAK_AUTHORITY"]
+    ?? builder.Configuration["Keycloak:Authority"]
+    ?? "http://192.168.1.18/realms/myrealm";
 
-var keycloakAuthority = builder.Configuration["Keycloak:Authority"]
-    ?? "http://192.168.1.18:8080/realms/myrealm";
 
-var keycloakAudience = builder.Configuration["Keycloak:Audience"] ?? "account";
-var keycloakClientId = builder.Configuration["Keycloak:ClientId"] ?? "api-pacientes";
-var keycloakClientSecret = builder.Configuration["Keycloak:ClientSecret"];
-var requireHttps = builder.Configuration.GetValue<bool>("Keycloak:RequireHttpsMetadata");
+var keycloakAudience = builder.Configuration["KEYCLOAK_AUDIENCE"] ?? builder.Configuration["Keycloak:Audience"] ?? "account";
+var keycloakClientId = builder.Configuration["KEYCLOAK_CLIENTID"] ?? builder.Configuration["Keycloak:ClientId"] ?? "api-pacientes";
+var keycloakClientSecret = builder.Configuration["KEYCLOAK_CLIENTSECRET"] ?? builder.Configuration["Keycloak:ClientSecret"];
+var requireHttps = builder.Configuration.GetValue<bool>("KEYCLOAK_REQUIREHTTPSMETADATA") || builder.Configuration.GetValue<bool>("Keycloak:RequireHttpsMetadata");
 
 // Add services to the container.
 builder.Services.AddControllers()
