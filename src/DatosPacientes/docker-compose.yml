@@ -2,19 +2,13 @@ services:
   api-pacientes:
     container_name: api-pacientes
     image: datospacientes-api:latest
+    env_file:
+      - .env
     build:
       context: .
       dockerfile: Dockerfile
     networks:
       - pacientes-net
-    environment:
-      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT}
-      - ConnectionStrings__cnDatabase=${DB_CONNECTION_STRING}
-      - Keycloak__Authority=${KEYCLOAK_AUTHORITY}
-      - Keycloak__Audience=${KEYCLOAK_AUDIENCE}
-      - Keycloak__ClientId=${KEYCLOAK_CLIENTID}
-      - Keycloak__ClientSecret=${KEYCLOAK_CLIENTSECRET}
-      - Keycloak__RequireHttpsMetadata=${KEYCLOAK_REQUIREHTTPSMETADATA}
     ports:
       - "8081:8080"
     volumes:
@@ -26,4 +20,4 @@ networks:
     driver: bridge
 
 volumes:
-  dp-keys:
+   dp-keys:
