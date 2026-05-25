@@ -26,7 +26,7 @@ Crea un archivo llamado `.env` en la raíz del backend (o donde corras docker-co
 
 ```env
 ASPNETCORE_ENVIRONMENT=Production
-DB_CONNECTION_STRING=Server=tu-servidor;Database=RecepcionV2;User Id=tu-usuario;Password=tu-password;TrustServerCertificate=True;
+ConnectionStrings__cnDatabase=Server=tu-servidor;Database=RecepcionV2;User Id=tu-usuario;Password=tu-password;TrustServerCertificate=True;
 KEYCLOAK_AUTHORITY=https://tu-servidor-keycloak/realms/tu-realm
 KEYCLOAK_AUDIENCE=tu-audience
 KEYCLOAK_CLIENTID=tu-client-id

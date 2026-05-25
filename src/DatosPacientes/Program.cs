@@ -138,7 +138,17 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(options =>
+    {
+        // Pre-rellena el client_id y client_secret en la UI de Swagger
+        options.OAuthClientId(keycloakClientId);
+        if (!string.IsNullOrEmpty(keycloakClientSecret))
+        {
+            options.OAuthClientSecret(keycloakClientSecret);
+        }
+        options.OAuthAppName("Swagger UI - Datos Pacientes");
+         options.OAuthUsePkce();
+    });
 }
 
 // Comentado para usar solo HTTP en el contenedor y evitar la advertencia de redirección HTTPS
