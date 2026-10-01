@@ -27,12 +27,18 @@ Crea un archivo llamado `.env` en la raíz del backend (o donde corras docker-co
 ```env
 ASPNETCORE_ENVIRONMENT=Production
 ConnectionStrings__cnDatabase=Server=tu-servidor;Database=RecepcionV2;User Id=tu-usuario;Password=tu-password;TrustServerCertificate=True;
-KEYCLOAK_AUTHORITY=https://tu-servidor-keycloak/realms/tu-realm
+KEYCLOAK_URL=https://tu-servidor-keycloak
+KEYCLOAK_REALM=tu-realm
 KEYCLOAK_AUDIENCE=tu-audience
 KEYCLOAK_CLIENTID=tu-client-id
 KEYCLOAK_CLIENTSECRET=tu-client-secret
 KEYCLOAK_REQUIREHTTPSMETADATA=true
+# Opcional: URL pública de Keycloak, solo si la API llega a Keycloak por una URL interna
+# (KEYCLOAK_URL) distinta a la que aparece en el claim "iss" del token.
+# KEYCLOAK_PUBLIC_URL=https://sso.tu-dominio
 ```
+
+> La API arma el Authority como `{KEYCLOAK_URL}/realms/{KEYCLOAK_REALM}` y debe coincidir con el `iss` de los tokens que reciba (protocolo, host y realm). Si no coincide, la autenticación falla con `IDX10205: Issuer validation failed`. Por compatibilidad, `KEYCLOAK_AUTHORITY` (URL completa) sigue funcionando y tiene prioridad si se define.
 
 ### 2. Levantar el servicio
 Abre una terminal, navega a la carpeta principal donde se aloja el archivo `docker-compose.yml` (`src/DatosPacientes/`) y ejecuta:
