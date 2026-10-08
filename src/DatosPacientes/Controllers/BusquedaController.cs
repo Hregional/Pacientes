@@ -7,6 +7,9 @@ using MapsterMapper;
 using Mapster;
 using DatosPacientes.DTOs;
 using Microsoft.AspNetCore.Authorization;
+using System.Linq.Expressions;
+using System.Reflection;
+using System.Text.RegularExpressions;
 
 namespace DatosPacientes.Controllers
 {
@@ -54,6 +57,44 @@ namespace DatosPacientes.Controllers
             });
         }
 
+        // ─── Método auxiliar: filtro indexable por prefijo de Historia Clínica ────
+        // No_Historia_Clinica se guarda alineado a la derecha con espacios (ej. "        927061").
+        // Trim() sobre la columna obliga a SQL Server a recorrer todo IX_Paciente_HistoriaClinica,
+        // así que se genera "col LIKE 'x%' OR col LIKE ' x%' OR col LIKE '  x%' ..." (una condición
+        // por cada cantidad posible de espacios iniciales): mismo resultado que LTRIM(col) LIKE 'x%',
+        // pero cada condición es un Index Seek.
+        private const int LargoNoHistoriaClinica = 50; // HasMaxLength(50) en RecepcionV2Context
+
+        private static readonly MethodInfo LikeMethod = typeof(DbFunctionsExtensions).GetMethod(
+            nameof(DbFunctionsExtensions.Like),
+            new[] { typeof(DbFunctions), typeof(string), typeof(string) })!;
+
+        private sealed record PatronLike(string Valor);
+
+        public static Expression<Func<Paciente, bool>> HistoriaClinicaEmpiezaCon(string prefijo)
+        {
+            // Escapa los comodines de LIKE para que se busquen literalmente
+            var prefijoEscapado = Regex.Replace(prefijo, @"[\[%_]", "[$0]");
+
+            var paciente = Expression.Parameter(typeof(Paciente), "p");
+            var columna = Expression.Property(paciente, nameof(Paciente.NoHistoriaClinica));
+
+            Expression cuerpo = Expression.Constant(false);
+            for (int espacios = LargoNoHistoriaClinica - prefijo.Length; espacios >= 0; espacios--)
+            {
+                // Acceder a una propiedad de un objeto capturado hace que EF lo envíe como parámetro SQL
+                var patron = new PatronLike(new string(' ', espacios) + prefijoEscapado + "%");
+                var like = Expression.Call(LikeMethod,
+                    Expression.Constant(EF.Functions),
+                    columna,
+                    Expression.Property(Expression.Constant(patron), nameof(PatronLike.Valor)));
+
+                cuerpo = cuerpo is ConstantExpression ? like : Expression.OrElse(like, cuerpo);
+            }
+
+            return Expression.Lambda<Func<Paciente, bool>>(cuerpo, paciente);
+        }
+
         // ─── Método auxiliar: obtiene estado requerido desde parametros_generales ─
         /*private async Task<int> GetEstadoRequerido()
         {
@@ -84,16 +125,17 @@ namespace DatosPacientes.Controllers
 
              //   int estadoRequerido = await GetEstadoRequerido();
 
-                var query = _context.Pacientes
-                    .AsNoTracking() // ✅ mejora rendimiento para solo lectura
+                NoHistoriaClinica = NoHistoriaClinica.Trim();
+
+                var pacientesFiltrados = _context.Pacientes.AsNoTracking(); // ✅ mejora rendimiento para solo lectura
+                if (NoHistoriaClinica != "-1")
+                    pacientesFiltrados = pacientesFiltrados.Where(HistoriaClinicaEmpiezaCon(NoHistoriaClinica));
+
+                var query = pacientesFiltrados
                     .Join(_context.Personas,
                         p => p.Persona,
                         per => per.Codigo,
                         (p, per) => new { Paciente = p, Persona = per })
-                    .Where(a =>
-                       // a.Persona.Estado == estadoRequerido &&
-                        (NoHistoriaClinica == "-1" ||
-                         a.Paciente.NoHistoriaClinica.Trim().StartsWith(NoHistoriaClinica)))
                     .OrderBy(a => a.Persona.Nombre1)
                     .Select(a => new PacienteCompletoDTO()
                     {
