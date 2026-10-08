@@ -13,17 +13,34 @@ Microsoft.IdentityModel.Logging.IdentityModelEventSource.ShowPII = true;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Cargar secretos adicionales si existen
+// Cargar secretos adicionales si existen.
+// appsettings.json ya lo carga CreateBuilder; las variables de entorno se vuelven a agregar
+// al final para que el .env de Docker siempre tenga prioridad sobre los archivos JSON.
 builder.Configuration
     .SetBasePath(Directory.GetCurrentDirectory())
     .AddJsonFile("secrets.json", optional: true, reloadOnChange: true)
-    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
+    .AddEnvironmentVariables();
 
-// Configuración de Keycloak
-var keycloakAuthority = builder.Configuration["KEYCLOAK_AUTHORITY"]
+// Configuración de Keycloak: el Authority se arma como {KEYCLOAK_URL}/realms/{KEYCLOAK_REALM}.
+// KEYCLOAK_AUTHORITY (URL completa) se mantiene por compatibilidad y tiene prioridad si se define.
+var keycloakUrl = (builder.Configuration["KEYCLOAK_URL"]
+    ?? builder.Configuration["Keycloak:Url"]
+    ?? "https://sso.hro.gob.gt").TrimEnd('/');
+var keycloakRealm = builder.Configuration["KEYCLOAK_REALM"]
+    ?? builder.Configuration["Keycloak:Realm"]
+    ?? "interno";
+
+var keycloakAuthority = (builder.Configuration["KEYCLOAK_AUTHORITY"]
     ?? builder.Configuration["Keycloak:Authority"]
-    ?? "http://192.168.1.18/realms/myrealm";
+    ?? $"{keycloakUrl}/realms/{keycloakRealm}").TrimEnd('/');
 
+// Issuer esperado en el claim "iss" del token. Por defecto es igual al Authority; solo se
+// define KEYCLOAK_PUBLIC_URL cuando la API llega a Keycloak por una URL interna distinta a la pública.
+var keycloakPublicUrl = builder.Configuration["KEYCLOAK_PUBLIC_URL"]
+    ?? builder.Configuration["Keycloak:PublicUrl"];
+var keycloakValidIssuer = string.IsNullOrWhiteSpace(keycloakPublicUrl)
+    ? keycloakAuthority
+    : $"{keycloakPublicUrl.TrimEnd('/')}/realms/{keycloakRealm}";
 
 var keycloakAudience = builder.Configuration["KEYCLOAK_AUDIENCE"] ?? builder.Configuration["Keycloak:Audience"] ?? "account";
 var keycloakClientId = builder.Configuration["KEYCLOAK_CLIENTID"] ?? builder.Configuration["Keycloak:ClientId"] ?? "api-pacientes";
@@ -55,8 +72,9 @@ builder.Services.AddSwaggerGen(options =>
         {
             AuthorizationCode = new OpenApiOAuthFlow
             {
-                AuthorizationUrl = new Uri($"{keycloakAuthority}/protocol/openid-connect/auth"),
-                TokenUrl = new Uri($"{keycloakAuthority}/protocol/openid-connect/token"),
+                // El navegador usa la URL pública de Keycloak (la misma del issuer)
+                AuthorizationUrl = new Uri($"{keycloakValidIssuer}/protocol/openid-connect/auth"),
+                TokenUrl = new Uri($"{keycloakValidIssuer}/protocol/openid-connect/token"),
                 Scopes = new Dictionary<string, string>
                 {
                     { "openid", "OpenID Connect" },
@@ -81,21 +99,17 @@ builder.Services.AddSwaggerGen(options =>
 // Configuración de Mapster
 builder.Services.AddMapster();
 
-// Configuración de Keycloak
-//var keycloakAuthority = builder.Configuration["Keycloak:Authority"]
-    //?? "http://192.168.1.18:8080/realms/myrealm";
-
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
         options.Authority = keycloakAuthority;
-        options.RequireHttpsMetadata = false;
-        options.MetadataAddress = $"{keycloakAuthority.TrimEnd('/')}/.well-known/openid-configuration";
+        options.RequireHttpsMetadata = requireHttps;
+        options.MetadataAddress = $"{keycloakAuthority}/.well-known/openid-configuration";
 
         options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
         {
             ValidateIssuer = true,
-            ValidIssuer = keycloakAuthority,        // usa la variable, no hardcodeado
+            ValidIssuer = keycloakValidIssuer,
             ValidateAudience = false,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
