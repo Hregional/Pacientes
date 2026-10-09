@@ -8,16 +8,14 @@ services:
       context: .
       dockerfile: Dockerfile
     networks:
-      - pacientes-net
-    ports:
-      - "${DOCKER_PORT}:8080"
+      - hro-net
     volumes:
       - dp-keys:/root/.aspnet/DataProtection-Keys
     restart: always
 
 networks:
-  pacientes-net:
-    driver: bridge
+  hro-net:
+    external: true
 
 volumes:
    dp-keys:
