@@ -115,7 +115,27 @@ namespace DatosPacientes.Controllers
         }*/
 
         // ─── Búsqueda por Historia Clínica ────────────────────────────────────────
+        /// <summary>
+        /// Búsqueda de pacientes por número de Historia Clínica (coincidencia exacta).
+        /// </summary>
+        /// <remarks>
+        /// Primero obtiene el paquete de pacientes cuya Historia Clínica empieza con el valor dado
+        /// (consulta indexable) y luego filtra en memoria los que coinciden exactamente.
+        ///
+        /// Ejemplo: `1434` devuelve solo la Historia Clínica `1434` (no `143405`, `14341`, ...).
+        /// Si existen varios pacientes con la misma Historia Clínica, se devuelven todos.
+        /// Usar `-1` para devolver todos los pacientes.
+        /// </remarks>
+        /// <param name="NoHistoriaClinica">Número de Historia Clínica exacto (ej. 1434).</param>
+        /// <response code="200">Pacientes cuya Historia Clínica coincide exactamente.</response>
+        /// <response code="400">El número de Historia Clínica viene vacío.</response>
+        /// <response code="404">No hay pacientes con esa Historia Clínica.</response>
+        /// <response code="500">Error al procesar la búsqueda.</response>
         [HttpGet("paciente/{NoHistoriaClinica}")]
+        [ProducesResponseType(typeof(List<PacienteCompletoDTO>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(string), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(string), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(string), StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult<List<PacienteCompletoDTO>>> GetPersonas(string NoHistoriaClinica)
         {
             try
@@ -127,6 +147,86 @@ namespace DatosPacientes.Controllers
 
                 NoHistoriaClinica = NoHistoriaClinica.Trim();
 
+                var pacientes = await ObtenerPorHistoriaClinicaExacta(NoHistoriaClinica);
+
+                if (pacientes.Count == 0)
+                    return NotFound("No se han encontrado pacientes para la Historia Clínica dada.");
+
+                return Ok(pacientes);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    $"Error al procesar la búsqueda por Historia Clínica: {ex.Message}");
+            }
+        }
+
+        // ─── Búsqueda EXACTA por Historia Clínica ─────────────────────────────────
+        // 1) Obtiene el mismo "paquete" que GetPersonas (prefijo indexable, barato para el servidor).
+        // 2) Sobre ese paquete, en memoria, se queda solo con los que coinciden exactamente.
+        //    Ej.: "1434" → el paquete trae "1434", "143405", "14341"...; se devuelve solo "1434".
+        //    Si hay varios pacientes con la misma Historia Clínica (duplicados), se devuelven todos.
+        /// <summary>
+        /// Búsqueda exacta de pacientes por número de Historia Clínica.
+        /// </summary>
+        /// <remarks>
+        /// Primero obtiene el paquete de pacientes cuya Historia Clínica empieza con el valor dado
+        /// (consulta indexable) y luego filtra en memoria los que coinciden exactamente.
+        ///
+        /// Ejemplo: `1434` devuelve solo la Historia Clínica `1434` (no `143405`, `14341`, ...).
+        /// Si existen varios pacientes con la misma Historia Clínica, se devuelven todos.
+        /// Usar `-1` para devolver todos los pacientes.
+        /// </remarks>
+        /// <param name="NoHistoriaClinica">Número de Historia Clínica exacto (ej. 1434).</param>
+        /// <response code="200">Pacientes cuya Historia Clínica coincide exactamente.</response>
+        /// <response code="400">El número de Historia Clínica viene vacío.</response>
+        /// <response code="404">No hay pacientes con esa Historia Clínica exacta.</response>
+        /// <response code="500">Error al procesar la búsqueda.</response>
+        [HttpGet("paciente/exacto/{NoHistoriaClinica}")]
+        [ProducesResponseType(typeof(List<PacienteCompletoDTO>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(string), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(string), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(string), StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<List<PacienteCompletoDTO>>> GetPersonasExacto(string NoHistoriaClinica)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(NoHistoriaClinica))
+                    return BadRequest("NoHistoriaClinica no puede ser nulo o vacío");
+
+                NoHistoriaClinica = NoHistoriaClinica.Trim();
+
+                var pacientes = await ObtenerPorHistoriaClinicaExacta(NoHistoriaClinica);
+
+                if (pacientes.Count == 0)
+                    return NotFound("No se han encontrado pacientes con esa Historia Clínica exacta.");
+
+                return Ok(pacientes);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    $"Error al procesar la búsqueda exacta por Historia Clínica: {ex.Message}");
+            }
+        }
+
+        // ─── Método auxiliar: paquete por prefijo + match exacto en memoria ───────
+        private async Task<List<PacienteCompletoDTO>> ObtenerPorHistoriaClinicaExacta(string NoHistoriaClinica)
+        {
+            var paquete = await ObtenerPaquetePorHistoriaClinica(NoHistoriaClinica);
+
+            if (NoHistoriaClinica == "-1")
+                return paquete;
+
+            // NormalizarPacientes ya recortó NoHistoriaClinica, así que la comparación es directa
+            return paquete
+                .Where(p => string.Equals(p.NoHistoriaClinica, NoHistoriaClinica, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+
+        // ─── Método auxiliar: paquete de pacientes cuya Historia Clínica empieza con el valor dado ─
+        private async Task<List<PacienteCompletoDTO>> ObtenerPaquetePorHistoriaClinica(string NoHistoriaClinica)
+        {
                 var pacientesFiltrados = _context.Pacientes.AsNoTracking(); // ✅ mejora rendimiento para solo lectura
                 if (NoHistoriaClinica != "-1")
                     pacientesFiltrados = pacientesFiltrados.Where(HistoriaClinicaEmpiezaCon(NoHistoriaClinica));
@@ -167,18 +267,8 @@ namespace DatosPacientes.Controllers
                     });
 
                 var pacientes = await query.ToListAsync();
-                NormalizarPacientes(pacientes); // ✅ normaliza DPI
-
-                if (pacientes.Count == 0)
-                    return NotFound("No se han encontrado pacientes para la Historia Clínica dada.");
-
-                return Ok(pacientes);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError,
-                    $"Error al procesar la búsqueda por Historia Clínica: {ex.Message}");
-            }
+                NormalizarPacientes(pacientes); // ✅ normaliza DPI y recorta NoHistoriaClinica
+                return pacientes;
         }
 
         // ─── Búsqueda por Fecha de Nacimiento ─────────────────────────────────────
