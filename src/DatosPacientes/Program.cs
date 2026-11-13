@@ -55,6 +55,8 @@ builder.Services.AddControllers()
         x.JsonSerializerOptions.Converters.Add(new DateTimeConverter("dd-MM-yyyy"));
     });
 
+builder.Services.AddMemoryCache();
+
 builder.Services.AddDbContext<RecepcionV2Context>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("cnDatabase")));
 
