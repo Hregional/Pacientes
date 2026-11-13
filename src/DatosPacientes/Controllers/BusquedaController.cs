@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Authorization;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Text.RegularExpressions;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace DatosPacientes.Controllers
 {
@@ -20,11 +21,13 @@ namespace DatosPacientes.Controllers
     {
         private readonly RecepcionV2Context _context;
         private readonly IMapper _mapper;
+        private readonly IMemoryCache _cache;
 
-        public BusquedaController(RecepcionV2Context context, IMapper mapper)
+        public BusquedaController(RecepcionV2Context context, IMapper mapper, IMemoryCache cache)
         {
             _context = context;
             _mapper = mapper;
+            _cache = cache;
         }
 
         [HttpGet("test")]
@@ -96,23 +99,42 @@ namespace DatosPacientes.Controllers
         }
 
         // ─── Método auxiliar: obtiene estado requerido desde parametros_generales ─
-        /*private async Task<int> GetEstadoRequerido()
+        // Igual que los SP: VerPacientesEliminados = 1 → solo Estado 1 (eliminados); otro valor → solo Estado 0 (activos).
+        // El parámetro casi nunca cambia, así que se cachea para no hacer un viaje extra a la BD en cada petición.
+        private const string CacheKeyEstadoRequerido = "Busqueda:EstadoRequerido";
+        private static readonly TimeSpan DuracionCacheEstado = TimeSpan.FromMinutes(5);
+
+        private async Task<int> GetEstadoRequerido()
         {
+            if (_cache.TryGetValue(CacheKeyEstadoRequerido, out int estadoCacheado))
+                return estadoCacheado;
+
             int? paramVerEliminados = null;
             var conn = _context.Database.GetDbConnection();
 
-            // ✅ Solo abre si no está ya abierta
-            if (conn.State != System.Data.ConnectionState.Open)
+            // ✅ Solo abre si no está ya abierta, y la cierra solo si la abrió aquí
+            bool abiertaAqui = conn.State != System.Data.ConnectionState.Open;
+            if (abiertaAqui)
                 await conn.OpenAsync();
 
-            using var cmd = conn.CreateCommand();
-            cmd.CommandText = "SELECT valor FROM parametros_generales WHERE nombre = 'VerPacientesEliminados'";
-            var result = await cmd.ExecuteScalarAsync();
-            if (result != null && result != DBNull.Value)
-                paramVerEliminados = Convert.ToInt32(result);
+            try
+            {
+                using var cmd = conn.CreateCommand();
+                cmd.CommandText = "SELECT valor FROM parametros_generales WHERE nombre = 'VerPacientesEliminados'";
+                var result = await cmd.ExecuteScalarAsync();
+                if (result != null && result != DBNull.Value && int.TryParse(result.ToString()?.Trim(), out var valor))
+                    paramVerEliminados = valor;
+            }
+            finally
+            {
+                if (abiertaAqui)
+                    await conn.CloseAsync();
+            }
 
-            return (paramVerEliminados == 1) ? 1 : 0;
-        }*/
+            int estado = (paramVerEliminados == 1) ? 1 : 0;
+            _cache.Set(CacheKeyEstadoRequerido, estado, DuracionCacheEstado);
+            return estado;
+        }
 
         // ─── Búsqueda por Historia Clínica ────────────────────────────────────────
         /// <summary>
@@ -142,8 +164,6 @@ namespace DatosPacientes.Controllers
             {
                 if (string.IsNullOrWhiteSpace(NoHistoriaClinica))
                     return BadRequest("NoHistoriaClinica no puede ser nulo o vacío");
-
-             //   int estadoRequerido = await GetEstadoRequerido();
 
                 NoHistoriaClinica = NoHistoriaClinica.Trim();
 
@@ -227,6 +247,8 @@ namespace DatosPacientes.Controllers
         // ─── Método auxiliar: paquete de pacientes cuya Historia Clínica empieza con el valor dado ─
         private async Task<List<PacienteCompletoDTO>> ObtenerPaquetePorHistoriaClinica(string NoHistoriaClinica)
         {
+                int estadoRequerido = await GetEstadoRequerido();
+
                 var pacientesFiltrados = _context.Pacientes.AsNoTracking(); // ✅ mejora rendimiento para solo lectura
                 if (NoHistoriaClinica != "-1")
                     pacientesFiltrados = pacientesFiltrados.Where(HistoriaClinicaEmpiezaCon(NoHistoriaClinica));
@@ -236,6 +258,7 @@ namespace DatosPacientes.Controllers
                         p => p.Persona,
                         per => per.Codigo,
                         (p, per) => new { Paciente = p, Persona = per })
+                    .Where(a => a.Persona.Estado == estadoRequerido)
                     .OrderBy(a => a.Persona.Nombre1)
                     .Select(a => new PacienteCompletoDTO()
                     {
@@ -284,7 +307,7 @@ namespace DatosPacientes.Controllers
                 if (!DateTime.TryParse(FechaNacimiento, out DateTime fechaParsed))
                     return BadRequest("Formato de fecha inválido. Use YYYY-MM-DD.");
 
-                //int estadoRequerido = await GetEstadoRequerido();
+                int estadoRequerido = await GetEstadoRequerido();
 
                 var query = _context.Pacientes
                     .AsNoTracking()
@@ -293,7 +316,7 @@ namespace DatosPacientes.Controllers
                         per => per.Codigo,
                         (p, per) => new { Paciente = p, Persona = per })
                     .Where(a =>
-                      //  a.Persona.Estado == estadoRequerido &&
+                        a.Persona.Estado == estadoRequerido &&
                         a.Persona.FechaNacimiento == fechaParsed)
                     .OrderBy(a => a.Persona.Nombre1)
                     .Select(a => new PacienteCompletoDTO()
@@ -356,6 +379,8 @@ namespace DatosPacientes.Controllers
 
             try
             {
+                int estadoRequerido = await GetEstadoRequerido();
+
                 var query = _context.Pacientes
                     .AsNoTracking() // ✅ mejora rendimiento para solo lectura
                     .Join(_context.Personas,
@@ -363,7 +388,7 @@ namespace DatosPacientes.Controllers
                         per => per.Codigo,
                         (p, per) => new { Paciente = p, Persona = per })
                     .Where(a =>
-                        a.Persona.Estado == 0 &&
+                        a.Persona.Estado == estadoRequerido &&
 
     // PrimerNombre - búsqueda sin acento (CI_AI)
     (EF.Functions.Like(
@@ -477,7 +502,7 @@ namespace DatosPacientes.Controllers
                 string cuiFormato3 = cuiLimpio.Length >= 13 ? $"{cuiLimpio.Substring(0, 4)}-{cuiLimpio.Substring(4, 5)}-{cuiLimpio.Substring(9)}" : cuiLimpio;
                 string cuiFormato4 = $"dpi:{cuiLimpio}";
 
-                //int estadoRequerido = await GetEstadoRequerido(); // ✅ reutiliza método
+                int estadoRequerido = await GetEstadoRequerido(); // ✅ reutiliza método (cacheado)
 
                 var query = _context.Pacientes
                     .AsNoTracking()
@@ -486,7 +511,7 @@ namespace DatosPacientes.Controllers
                         per => per.Codigo,
                         (p, per) => new { Paciente = p, Persona = per })
                     .Where(a =>
-                    //    a.Persona.Estado == estadoRequerido &&
+                        a.Persona.Estado == estadoRequerido &&
                         (cuiLimpio == "-1" ||
                          (a.Persona.CodigoRenap != null && // ✅ Permite el uso de índices de SQL Server
                           (a.Persona.CodigoRenap == cuiFormato1 ||
