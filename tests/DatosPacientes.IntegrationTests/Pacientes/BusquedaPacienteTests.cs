@@ -5,6 +5,7 @@ using DatosPacientes.DTOs;
 using DatosPacientes.Models;
 using DatosPacientes.Mappings;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -34,7 +35,7 @@ namespace DatosPacientes.IntegrationTests.Pacientes
             using (var context = Fixture.CreateContext()) 
             { 
                 // Arrange
-                var controller = new BusquedaController(context, _mapper);
+                var controller = new BusquedaController(context, _mapper, new MemoryCache(new MemoryCacheOptions()));
 
             string NoHistoriaClinica = null!;
 
@@ -54,7 +55,7 @@ namespace DatosPacientes.IntegrationTests.Pacientes
             using (var context = Fixture.CreateContext())
             {
                 // Arrange
-                var controller = new BusquedaController(context, _mapper);
+                var controller = new BusquedaController(context, _mapper, new MemoryCache(new MemoryCacheOptions()));
 
                 // Act
                 var result = await controller.GetPersonas("123456789");
@@ -71,7 +72,7 @@ namespace DatosPacientes.IntegrationTests.Pacientes
             using (var context = Fixture.CreateContext())
             {
                 // Arrange
-                var controller = new BusquedaController(context, _mapper);
+                var controller = new BusquedaController(context, _mapper, new MemoryCache(new MemoryCacheOptions()));
 
                 // Act
                 var result = await controller.GetPersonas("736523");
@@ -89,7 +90,7 @@ namespace DatosPacientes.IntegrationTests.Pacientes
             using (var context = Fixture.CreateContext())
             {
                 // Arrange
-                var controller = new BusquedaController(context, _mapper);
+                var controller = new BusquedaController(context, _mapper, new MemoryCache(new MemoryCacheOptions()));
 
                 // Act
                 var result = await controller.GetPacientesByDpi("3593745140801");
@@ -107,7 +108,7 @@ namespace DatosPacientes.IntegrationTests.Pacientes
             using (var context = Fixture.CreateContext())
             {
                 // Arrange
-                var controller = new BusquedaController(context, _mapper);
+                var controller = new BusquedaController(context, _mapper, new MemoryCache(new MemoryCacheOptions()));
 
                 // Act
                 var result = await controller.GetPacientesByDpi("1234567890123");
